@@ -1,0 +1,52 @@
+allprojects {
+    project.ext.publishRepoName = "public-water-repository"
+    project.ext.publishRepoUrl = "https://nexus.acsoftware.it/nexus/repository/maven-water/"
+    project.ext.publishRepoUsername = System.getProperty("publishRepoUsername", "noUser")
+    project.ext.publishRepoPassword = System.getProperty("publishRepoPassword", "noPassword")
+    group 'it.water.distribution'
+    version project.waterVersion
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        maven {
+
+            credentials {
+                username project.publishRepoUsername
+                password project.publishRepoPassword
+            }
+
+            name = project.publishRepoName
+            url = project.publishRepoUrl
+        }
+    }
+
+    apply plugin: 'java'
+    apply plugin: 'maven-publish'
+    apply plugin: 'jacoco'
+
+    publishing {
+        repositories {
+            maven {
+
+                credentials {
+                    username project.publishRepoUsername
+                    password project.publishRepoPassword
+                }
+
+                name = project.publishRepoName
+                url = project.publishRepoUrl
+            }
+        }
+    }
+
+}
+
+project.ext.publishRepoName = "public-water-repository"
+project.ext.publishRepoUrl = "https://nexus.acsoftware.it/nexus/repository/maven-water/"
+project.ext.publishRepoUsername = System.getProperty("publishRepoUsername", "noUser")
+project.ext.publishRepoPassword = System.getProperty("publishRepoPassword", "noPassword")
+
+
