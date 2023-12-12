@@ -1,0 +1,34 @@
+osgi.contract; (&(osgi.contract=JavaEL)(version=2.2.0))
+125; version=[2.2.0, 2.1.0, 2.0.0, 1.0.0]
+osgi.wiring.package; (&(osgi.wiring.package=javax.enterprise.context.spi)(version>=2.0.0)(!(version>=3.0.0)))
+20; version=2.0.0
+osgi.wiring.package; (&(osgi.wiring.package=javax.enterprise.inject.spi)(version>=2.0.0)(!(version>=3.0.0)))
+20; version=2.0.0
+osgi.wiring.package; (&(osgi.wiring.package=javax.enterprise.inject.spi.configurator)(version>=2.0.0)(!(version>=3.0.0)))
+20; version=2.0.0
+osgi.wiring.package; (&(osgi.wiring.package=javax.enterprise.context)(version>=2.0.0)(!(version>=3.0.0)))
+20; version=2.0.0
+osgi.wiring.package; (osgi.wiring.package=javax.el)
+125; version=2.2.0
+osgi.contract; (&(osgi.contract=JavaInject)(version=1.0.0))
+124; version=[1.0.0]
+osgi.extender; (osgi.extender=osgi.serviceloader.processor)
+23; version=1.0.0
+osgi.wiring.package; (&(osgi.wiring.package=javax.enterprise.util)(version>=2.0.0)(!(version>=3.0.0)))
+20; version=2.0.0
+osgi.wiring.package; (&(osgi.wiring.package=javax.enterprise.event)(version>=2.0.0)(!(version>=3.0.0)))
+20; version=2.0.0
+osgi.contract; (&(osgi.contract=JavaInterceptor)(version=1.2.0))
+126; version=[1.2.0, 1.1.0]
+osgi.ee; (&(osgi.ee=JavaSE)(version=1.8))
+0; version=[1.0.0, 1.1.0, 1.2.0, 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 9.0.0, 10.0.0, 11.0.0]
+osgi.serviceloader; (osgi.serviceloader=javax.enterprise.inject.spi.CDIProvider)
+82
+osgi.serviceloader; (osgi.serviceloader=javax.enterprise.inject.se.SeContainerInitializer)
+82
+osgi.wiring.package; (osgi.wiring.package=javax.interceptor)
+126; version=1.2.0
+osgi.wiring.package; (osgi.wiring.package=javax.inject)
+124; version=1.0.0
+osgi.wiring.package; (&(osgi.wiring.package=javax.enterprise.inject)(version>=2.0.0)(!(version>=3.0.0)))
+20; version=2.0.0

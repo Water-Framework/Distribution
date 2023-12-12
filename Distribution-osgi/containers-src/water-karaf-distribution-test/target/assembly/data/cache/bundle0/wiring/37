@@ -1,0 +1,26 @@
+osgi.wiring.package; (&(osgi.wiring.package=jakarta.validation)(version>=3.0.0)(!(version>=4.0.0)))
+71; version=3.0.0
+osgi.wiring.package; (&(osgi.wiring.package=org.hibernate.validator.messageinterpolation)(version>=7.0.0)(!(version>=8.0.0)))
+201; version=7.0.2.Final
+osgi.wiring.package; (&(osgi.wiring.package=jakarta.validation.spi)(version>=3.0.0)(!(version>=4.0.0)))
+71; version=3.0.0
+osgi.wiring.package; (&(osgi.wiring.package=org.hibernate.validator)(version>=7.0.0)(!(version>=8.0.0)))
+201; version=7.0.2.Final
+osgi.wiring.package; (&(osgi.wiring.package=org.slf4j)(version>=1.7.0)(!(version>=2.0.0)))
+4; version=1.7.36
+osgi.wiring.package; (&(osgi.wiring.package=org.osgi.framework)(version>=1.10.0)(!(version>=2.0.0)))
+0; version=1.10.0
+osgi.wiring.package; (&(osgi.wiring.package=org.hibernate.annotations)(version>=5.0.0)(!(version>=6.0.0)))
+199; version=5.6.7.Final
+osgi.wiring.package; (&(osgi.wiring.package=org.osgi.service.cm)(version>=1.6.0)(!(version>=2.0.0)))
+10; version=1.6.0
+osgi.wiring.package; (&(osgi.wiring.package=javassist.util.proxy)(version>=3.26.0)(!(version>=4.0.0)))
+72; version=3.27.0.GA
+osgi.wiring.package; (&(osgi.wiring.package=jakarta.validation.bootstrap)(version>=3.0.0)(!(version>=4.0.0)))
+71; version=3.0.0
+osgi.ee; (&(osgi.ee=JavaSE)(version=11))
+0; version=[1.0.0, 1.1.0, 1.2.0, 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 9.0.0, 10.0.0, 11.0.0]
+osgi.wiring.package; (&(osgi.wiring.package=jakarta.validation.constraints)(version>=3.0.0)(!(version>=4.0.0)))
+71; version=3.0.0
+osgi.wiring.package; (&(osgi.wiring.package=org.osgi.framework.hooks.service)(version>=1.1.0)(!(version>=2.0.0)))
+0; version=1.1.0

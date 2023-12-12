@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>${groupId}</groupId>
+    <artifactId>${artifactId}</artifactId>
+	<version>${version}</version>
+    <packaging>karaf-assembly</packaging>
+    <name>${name}</name>
+    <description> karaf runtime with water framework</description>
+    <properties>
+        <pax.exam.version>4.13.4</pax.exam.version>
+    </properties>
+
+	<parent>
+	  <groupId>it.water.container</groupId>
+	  <artifactId>water-karaf-distribution-parent</artifactId>
+	  <version>${water-version}_karaf_${karaf-version}</version>
+	</parent>
+
+    <repositories>
+        <repository>
+            <id>it.water</id>
+            <name>water nexus</name>
+            <url>https://nexus.acsoftware.it/nexus/repository/maven-water/</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <!-- INHERITED FROM PARENT -->
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.karaf.tooling</groupId>
+                <artifactId>karaf-maven-plugin</artifactId>
+                <version>${karaf.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <bootFeatures>
+                        <feature>standard</feature>
+#if (${waterClusteredMode} == "true")
+                        <feature>water-core-clustered-features</feature>
+#else
+                        <feature>water-core-features</feature>
+#end
+
+                    </bootFeatures>
+                </configuration>
+            </plugin>
+            <!-- karaf-maven-plugin will call both assembly and archive goals -->
+           <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>fix-distro</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <!--excluding acsoftware jars from system repo, in order to be downloaded for test purpose -->
+                                <delete dir="${project.build.directory}/assembly/system/it/water" includeemptydirs="true"/>
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

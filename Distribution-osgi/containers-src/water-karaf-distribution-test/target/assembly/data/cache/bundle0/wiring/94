@@ -1,0 +1,10 @@
+osgi.wiring.package; (osgi.wiring.package=javax.naming.spi)
+0; version=0.0.0
+osgi.wiring.package; (&(osgi.wiring.package=org.apache.aries.util.nls)(version>=1.0.0)(!(version>=2.0.0)))
+104; version=1.0.0
+osgi.wiring.package; (&(osgi.wiring.package=org.slf4j)(version>=1.5.0)(!(version>=2.0.0)))
+4; version=1.7.36
+osgi.wiring.package; (&(osgi.wiring.package=org.apache.aries.util)(version>=1.0.0)(!(version>=2.0.0)))
+104; version=1.0.0
+osgi.wiring.package; (&(osgi.wiring.package=org.osgi.framework)(version>=1.5.0)(!(version>=2.0.0)))
+0; version=1.10.0

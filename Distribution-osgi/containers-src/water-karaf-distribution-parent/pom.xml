@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2019-2023 ACSoftware
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License")
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>it.water.container</groupId>
+    <artifactId>water-karaf-distribution-parent</artifactId>
+    <version>${water.version}_karaf_${karaf.version}</version>
+    <packaging>pom</packaging>
+    <name>Water Frameowrk Karaf distribution Parent</name>
+    <description>Water Framework Karaf Distribution parent project</description>
+    <properties>
+        <karaf.version>${karaf.version}</karaf.version>
+        <water.version>${water.version}</water.version>
+        <org.apache.felix.metatype.version>1.2.4</org.apache.felix.metatype.version>
+    </properties>
+    <repositories>
+        <repository>
+            <id>it.water</id>
+            <name>water nexus</name>
+            <url>https://nexus.acsoftware.it/nexus/repository/maven/</url>
+        </repository>
+    </repositories>
+
+	<distributionManagement>
+	    <repository>
+           <id>it.water</id>
+           <name>water nexus</name>
+           <url>https://nexus.acsoftware.it/nexus/repository/maven-water/</url>
+	    </repository>
+	</distributionManagement>
+
+	<profiles>
+		<profile>
+	  	  <id>test</id>
+	  		<properties>
+	    		<resource.path>src/main/test/resources</resource.path>
+				<resource.filtered.path>src/main/test/filtered-resources</resource.filtered.path>
+	  		</properties>
+		</profile>
+		<profile>
+	  	  <id>default</id>
+	  		<properties>
+	    		<resource.path>src/main/default/resources/</resource.path>
+			<resource.filtered.path>src/main/default/filtered-resources</resource.filtered.path>
+	  		</properties>
+			<activation>
+			           <activeByDefault>true</activeByDefault>
+			</activation>
+		</profile>
+	</profiles>
+
+	<dependencies>
+        <dependency>
+            <!-- scope is compile so all features (there is only one) are installed into startup.properties and the feature repo itself is not added in etc/org.apache.karaf.features.cfg file -->
+            <groupId>org.apache.karaf.features</groupId>
+            <artifactId>framework</artifactId>
+            <version>${karaf.version}</version>
+            <type>kar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.karaf.features</groupId>
+            <artifactId>standard</artifactId>
+            <classifier>features</classifier>
+            <version>${karaf.version}</version>
+            <type>xml</type>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.karaf.features</groupId>
+            <artifactId>enterprise</artifactId>
+            <classifier>features</classifier>
+            <version>${karaf.version}</version>
+            <type>xml</type>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>it.water.distribution</groupId>
+            <artifactId>Water-distribution-karaf-features</artifactId>
+            <classifier>features</classifier>
+            <version>${water.version}</version>
+            <type>xml</type>
+            <scope>runtime</scope>
+        </dependency>
+		<!-- JMX Monitoring TOOL -->
+		<dependency>
+			<groupId>io.hawt</groupId>
+			<artifactId>hawtio-karaf</artifactId>
+			<version>2.14.5</version>
+			<type>xml</type>
+			<classifier>features</classifier>
+			<scope>runtime</scope>
+		</dependency>
+
+        <!-- STARTUP FEATURES -->
+
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.metatype</artifactId>
+            <version>${org.apache.felix.metatype.version}</version>
+        </dependency>
+
+    </dependencies>
+    <build>
+        <!-- if you want to include resources in the distribution -->
+        <resources>
+            <resource>
+                <directory>${resource.path}</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>${resource.filtered.path}</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </resource>
+        </resources>
+        <plugins>
+            <!-- karaf-maven-plugin will call both assembly and archive goals -->
+            <plugin>
+                <groupId>org.apache.karaf.tooling</groupId>
+                <artifactId>karaf-maven-plugin</artifactId>
+                <version>${karaf.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <bootFeatures>
+                        <feature>standard</feature>
+                        <feature>water-core-features</feature>
+						<feature>hawtio</feature>
+                    </bootFeatures>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

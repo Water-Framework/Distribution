@@ -1,0 +1,93 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+plugins {
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+}
+
+configurations {
+    globalImplementation.extendsFrom(implementation)
+    globalImplementation.canBeResolved(true)
+
+    includeInJar {
+        canBeResolved(true)
+        canBeConsumed(false)
+        transitive false
+    }
+}
+
+dependencies {
+    //include inside the final bundle
+    includeInJar group: 'it.water.core', name: 'Core-api', version: project.waterVersion
+    includeInJar group: 'it.water.core', name: 'Core-bundle', version: project.waterVersion
+    includeInJar group: 'it.water.core', name: 'Core-interceptors', version: project.waterVersion
+    includeInJar group: 'it.water.core', name: 'Core-model', version: project.waterVersion
+    includeInJar group: 'it.water.core', name: 'Core-permission', version: project.waterVersion
+    includeInJar group: 'it.water.core', name: 'Core-registry', version: project.waterVersion
+    includeInJar group: 'it.water.core', name: 'Core-security', version: project.waterVersion
+    includeInJar group: 'it.water.core', name: 'Core-service', version: project.waterVersion
+    includeInJar group: 'it.water.core', name: 'Core-validation', version: project.waterVersion
+
+    includeInJar group: 'it.water.repository', name: 'Repository-entity', version: project.waterVersion
+    includeInJar group: 'it.water.repository', name: 'Repository-persistence', version: project.waterVersion
+    includeInJar group: 'it.water.repository', name: 'Repository-service', version: project.waterVersion
+    includeInJar group: 'it.water.repository', name: 'Repository-service-jakarta', version: project.waterVersion
+
+    includeInJar group: 'it.water.repository.jpa', name: 'JpaRepository-javax', version: project.waterVersion
+
+    includeInJar group: 'it.water.service.rest', name: 'Rest-api', version: project.waterVersion
+    includeInJar group: 'it.water.service.rest', name: 'Rest-service', version: project.waterVersion
+    includeInJar group: 'it.water.service.rest', name: 'Rest-security', version: project.waterVersion
+    //installing jax rs version of the exposed rest services
+    includeInJar group: 'it.water.service.rest', name: 'Rest-jaxrs-api', version: project.waterVersion
+    includeInJar group: 'it.water.service.rest', name: 'Rest-api-manager-apache-cxf', version: project.waterVersion
+
+    includeInJar group: 'com.nimbusds', name: 'nimbus-jose-jwt', version: project.nimbusJoseJwtVersion
+
+    includeInJar group: 'it.water.implementation', name: 'Implementation-osgi', version: project.waterVersion
+}
+
+
+/**
+ * Task which creates the final jar starting from the bundle create from the osgiBundle task.
+ * We use ShadowJar in order to merge all META-INF/annotations/it.water.core.interceptors.annotations.FrameworkComponent file
+ * This file is used by AtteoClassIndex in order to track all @FrameworkComponent classes avoiding class scanning which is slower.
+ * Atteo class index generates annotations file which needs to be merged collecting entries from all jars.
+ */
+task("osgiJar", type: ShadowJar) {
+    from project.configurations.includeInJar.collect { it.isDirectory() ? it : zipTree(it) }
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    archiveBaseName.set('Water-distribution-osgi')
+    archiveClassifier.set('')
+    manifest {
+        from "${buildDir}/extractedManifest/META-INF/MANIFEST.MF"
+    }
+
+    mergeServiceFiles {
+        path = '**/META-INF/annotations'
+    }
+}
+
+task extractManifest(type: Copy) {
+    from zipTree(project.configurations.includeInJar.files.find { it.name.startsWith("Implementation-osgi") })
+    include 'META-INF/MANIFEST.MF'
+    into "${buildDir}/extractedManifest"
+}
+
+jar {
+    enabled false
+}
+
+osgiJar.dependsOn(extractManifest)
+jar.dependsOn(osgiJar)
+
+//publish configurations
+publishing {
+    publications {
+        osgi(MavenPublication) {
+            artifact tasks.osgiJar
+            artifactId 'Water-distribution-osgi'
+        }
+    }
+}
+
+ 
