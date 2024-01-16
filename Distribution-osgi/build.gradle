@@ -30,7 +30,6 @@ dependencies {
     includeInJar group: 'it.water.repository', name: 'Repository-entity', version: project.waterVersion
     includeInJar group: 'it.water.repository', name: 'Repository-persistence', version: project.waterVersion
     includeInJar group: 'it.water.repository', name: 'Repository-service', version: project.waterVersion
-    includeInJar group: 'it.water.repository', name: 'Repository-service-jakarta', version: project.waterVersion
 
     includeInJar group: 'it.water.repository.jpa', name: 'JpaRepository-javax', version: project.waterVersion
 
