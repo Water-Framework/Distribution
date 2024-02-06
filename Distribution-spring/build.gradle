@@ -23,17 +23,6 @@ dependencies {
     includeInJar group: 'it.water.core', name: 'Core-service', version: project.waterVersion
     includeInJar group: 'it.water.core', name: 'Core-validation', version: project.waterVersion
     includeInJar group: 'it.water.implementation', name: 'Implementation-spring', version: project.waterVersion
-
-    implementation group: 'it.water.core', name: 'Core-api', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-bundle', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-interceptors', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-model', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-permission', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-registry', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-security', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-service', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-validation', version: project.waterVersion
-    implementation group: 'it.water.implementation', name: 'Implementation-spring', version: project.waterVersion
 }
 
 /**
