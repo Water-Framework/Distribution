@@ -22,19 +22,18 @@ dependencies {
     includeInJar group: 'it.water.core', name: 'Core-security', version: project.waterVersion
     includeInJar group: 'it.water.core', name: 'Core-service', version: project.waterVersion
     includeInJar group: 'it.water.core', name: 'Core-validation', version: project.waterVersion
-
-    includeInJar group: 'it.water.repository', name: 'Repository-entity', version: project.waterVersion
-    includeInJar group: 'it.water.repository', name: 'Repository-persistence', version: project.waterVersion
-    includeInJar group: 'it.water.repository', name: 'Repository-service', version: project.waterVersion
-
-    includeInJar group: 'it.water.repository.jpa', name: 'JpaRepository-javax', version: project.waterVersion
-
-    includeInJar group: 'it.water.service.rest', name:'Rest-api', version: project.waterVersion
-    includeInJar group: 'it.water.service.rest', name:'Rest-service', version: project.waterVersion
-    includeInJar group: 'it.water.service.rest', name:'Rest-security', version: project.waterVersion
-    includeInJar group: 'com.nimbusds', name: 'nimbus-jose-jwt', version: project.nimbusJoseJwtVersion
-
     includeInJar group: 'it.water.implementation', name: 'Implementation-spring', version: project.waterVersion
+
+    implementation group: 'it.water.core', name: 'Core-api', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-bundle', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-interceptors', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-model', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-permission', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-registry', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-security', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-service', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-validation', version: project.waterVersion
+    implementation group: 'it.water.implementation', name: 'Implementation-spring', version: project.waterVersion
 }
 
 /**
