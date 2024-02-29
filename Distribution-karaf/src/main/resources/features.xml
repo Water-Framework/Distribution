@@ -53,10 +53,13 @@
     <bundle>mvn:org.postgresql/postgresql/42.2.9</bundle>
     <bundle start-level="79">mvn:it.water.distribution/Water-distribution-osgi/3.0.0</bundle>
   </feature>
-  <feature name="water-core-features-test" version="3.0.0-alfa" description="All Water Core and test Modules ">
+  <feature name="water-jpa-repository" version="3.0.0-alfa" description="All Water Core and test Modules ">
     <feature>water-core-features</feature>
+    <bundle>mvn:it.water.repository.jpa/JpaRepository-osgi/3.0.0</bundle>
+  </feature>
+  <feature name="water-core-features-test" version="3.0.0-alfa" description="All Water Core and test Modules ">
+    <feature>water-jpa-repository</feature>
     <bundle>mvn:it.water.osgi.test.bundle/Water-osgi-test-bundle/3.0.0</bundle>
     <bundle>mvn:it.water.osgi.test.bundle/Water-osgi-test-bundle-entity/3.0.0</bundle>
-    <bundle>mvn:it.water.repository.jpa/JpaRepository-osgi/3.0.0</bundle>
   </feature>
 </features>
