@@ -57,8 +57,13 @@
     <feature>water-core-features</feature>
     <bundle>mvn:it.water.repository.jpa/JpaRepository-osgi/3.0.0</bundle>
   </feature>
-  <feature name="water-core-features-test" version="3.0.0-alfa" description="All Water Core and test Modules ">
+  <feature name="water-rest" version="3.0.0-alfa" description="All Water Core and test Modules ">
     <feature>water-jpa-repository</feature>
+    <bundle>mvn:it.water.service.rest/Rest-api-manager-apache-cxf/3.0.0</bundle>
+    <bundle>mvn:it.water.service.rest/Rest-service/3.0.0</bundle>
+  </feature>
+  <feature name="water-core-features-test" version="3.0.0-alfa" description="All Water Core and test Modules ">
+    <feature>water-rest</feature>
     <bundle>mvn:it.water.osgi.test.bundle/Water-osgi-test-bundle/3.0.0</bundle>
     <bundle>mvn:it.water.osgi.test.bundle/Water-osgi-test-bundle-entity/3.0.0</bundle>
   </feature>
