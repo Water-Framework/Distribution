@@ -5,9 +5,6 @@ plugins {
 }
 
 configurations {
-    globalImplementation.extendsFrom(implementation)
-    globalImplementation.canBeResolved(true)
-
     includeInJar {
         canBeResolved(true)
         canBeConsumed(false)

@@ -64,7 +64,6 @@
   </feature>
   <feature name="water-core-features-test" version="${project.version}" description="All Water Core and test Modules ">
     <feature>water-rest</feature>
-    <bundle>mvn:it.water.core/Core-testing-utils/${project.version}</bundle>
     <bundle>mvn:it.water.osgi.test.bundle/Water-osgi-test-bundle/${project.version}</bundle>
     <bundle>mvn:it.water.osgi.test.bundle/Water-osgi-test-bundle-entity/${project.version}</bundle>
   </feature>
