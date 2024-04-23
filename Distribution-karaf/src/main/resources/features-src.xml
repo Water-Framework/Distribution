@@ -59,8 +59,8 @@
   </feature>
   <feature name="water-rest" version="${project.version}" description="All Water Core and test Modules ">
     <feature>water-jpa-repository</feature>
-    <bundle>mvn:it.water.service.rest/Rest-api-manager-apache-cxf/${project.version}</bundle>
     <bundle>mvn:it.water.service.rest/Rest-service/${project.version}</bundle>
+    <bundle>mvn:it.water.service.rest/Rest-api-manager-apache-cxf/${project.version}</bundle>
   </feature>
   <feature name="water-core-features-test" version="${project.version}" description="All Water Core and test Modules ">
     <feature>water-rest</feature>

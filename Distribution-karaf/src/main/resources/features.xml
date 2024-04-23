@@ -59,8 +59,8 @@
   </feature>
   <feature name="water-rest" version="3.0.0" description="All Water Core and test Modules ">
     <feature>water-jpa-repository</feature>
-    <bundle>mvn:it.water.service.rest/Rest-api-manager-apache-cxf/3.0.0</bundle>
     <bundle>mvn:it.water.service.rest/Rest-service/3.0.0</bundle>
+    <bundle>mvn:it.water.service.rest/Rest-api-manager-apache-cxf/3.0.0</bundle>
   </feature>
   <feature name="water-core-features-test" version="3.0.0" description="All Water Core and test Modules ">
     <feature>water-rest</feature>
