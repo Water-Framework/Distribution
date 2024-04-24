@@ -51,20 +51,20 @@
     <bundle>mvn:org.bouncycastle/bcpkix-jdk15on/1.69</bundle>
     <bundle>mvn:org.bouncycastle/bcmail-jdk15on/1.69</bundle>
     <bundle>mvn:org.postgresql/postgresql/42.2.9</bundle>
-    <bundle start-level="79">mvn:it.water.distribution/Water-distribution-osgi/3.0.0</bundle>
+    <bundle>mvn:it.water.distribution/Water-distribution-osgi/3.0.0</bundle>
   </feature>
   <feature name="water-jpa-repository" version="3.0.0" description="All Water Core and test Modules ">
     <feature>water-core-features</feature>
-    <bundle>mvn:it.water.repository.jpa/JpaRepository-osgi/3.0.0</bundle>
+    <bundle start-level="81">mvn:it.water.repository.jpa/JpaRepository-osgi/3.0.0</bundle>
   </feature>
   <feature name="water-rest" version="3.0.0" description="All Water Core and test Modules ">
     <feature>water-jpa-repository</feature>
-    <bundle>mvn:it.water.service.rest/Rest-service/3.0.0</bundle>
-    <bundle>mvn:it.water.service.rest/Rest-api-manager-apache-cxf/3.0.0</bundle>
+    <bundle start-level="81">mvn:it.water.service.rest/Rest-service/3.0.0</bundle>
+    <bundle start-level="81">mvn:it.water.service.rest/Rest-api-manager-apache-cxf/3.0.0</bundle>
   </feature>
   <feature name="water-core-features-test" version="3.0.0" description="All Water Core and test Modules ">
     <feature>water-rest</feature>
-    <bundle>mvn:it.water.osgi.test.bundle/Water-osgi-test-bundle/3.0.0</bundle>
-    <bundle>mvn:it.water.osgi.test.bundle/Water-osgi-test-bundle-entity/3.0.0</bundle>
+    <bundle start-level="81">mvn:it.water.osgi.test.bundle/Water-osgi-test-bundle/3.0.0</bundle>
+    <bundle start-level="81">mvn:it.water.osgi.test.bundle/Water-osgi-test-bundle-entity/3.0.0</bundle>
   </feature>
 </features>
