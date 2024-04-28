@@ -21,7 +21,7 @@ dependencies {
     includeInJar group: 'it.water.core', name: 'Core-registry', version: project.waterVersion
     includeInJar group: 'it.water.core', name: 'Core-security', version: project.waterVersion
     includeInJar group: 'it.water.core', name: 'Core-service', version: project.waterVersion
-    includeInJar group: 'it.water.core', name: 'Core-validation', version: project.waterVersion
+    includeInJar group: 'it.water.core', name: 'Core-validation-javax', version: project.waterVersion
     includeInJar group: 'it.water.core', name: 'Core-testing-utils', version: project.waterVersion
     includeInJar group: 'it.water.implementation', name: 'Implementation-spring', version: project.waterVersion
     includeInJar group: 'org.reflections', name: 'reflections', version: '0.10.2'
