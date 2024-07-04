@@ -46,7 +46,7 @@
         
     <artifactId>water-karaf-distribution-parent</artifactId>
         
-    <version>3.0.0_karaf_4.4.2</version>
+    <version>3.0.0_karaf_4.4.6</version>
       
   </parent>
     

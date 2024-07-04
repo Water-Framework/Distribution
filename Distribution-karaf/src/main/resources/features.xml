@@ -22,34 +22,59 @@
     <feature>jdbc</feature>
     <feature>jndi</feature>
     <feature>transaction</feature>
-    <feature>jpa</feature>
+    <!--<feature>jpa</feature>-->
     <feature>osgi-cdi-owb</feature>
-    <feature version="[5,6)">hibernate</feature>
-    <feature version="[7,8)">hibernate-validator</feature>
     <feature>pax-web-jetty-websockets</feature>
     <feature>pax-jdbc</feature>
     <feature>pax-jdbc-config</feature>
     <feature>pax-jdbc-pool-dbcp2</feature>
     <feature>scr</feature>
     <feature version="[3.4,4)">cxf-rs-description-swagger2</feature>
-    <!--<bundle>mvn:org.hibernate.validator/hibernate-validator/8.0.0.Final</bundle>-->
+    <bundle>mvn:org.hibernate.validator/hibernate-validator/7.0.5.Final</bundle>
+    <!-- Hibernate JPA required bundles -->
+    <bundle>mvn:org.codehaus.woodstox/stax2-api/4.2.1</bundle>
+    <bundle>mvn:com.fasterxml.woodstox/woodstox-core/6.4.0</bundle>
+    <bundle>mvn:org.checkerframework/checker-qual/3.44.0</bundle>
+    <bundle>mvn:org.antlr/antlr4-runtime/4.13.1</bundle>
+    <bundle>mvn:net.bytebuddy/byte-buddy/1.14.17</bundle>
+    <bundle>mvn:com.fasterxml/classmate/1.7.0</bundle>
+    <bundle>mvn:org.eclipse/yasson/3.0.3</bundle>
+    <bundle>mvn:io.smallrye/jandex/3.1.2</bundle>
+    <!-- End Hibernate bundles -->
+    <!-- Jakarta bundles -->
+    <bundle>mvn:jakarta.persistence/jakarta.persistence-api/3.2.0</bundle>
+    <bundle>mvn:jakarta.transaction/jakarta.transaction-api/2.0.1</bundle>
+    <bundle>mvn:jakarta.validation/jakarta.validation-api/3.0.2</bundle>
+    <bundle>mvn:jakarta.enterprise/jakarta.enterprise.cdi-api/4.1.0</bundle>
+    <bundle>mvn:jakarta.enterprise/jakarta.enterprise.lang-model/4.1.0</bundle>
+    <bundle>mvn:jakarta.interceptor/jakarta.interceptor-api/2.2.0</bundle>
+    <bundle>mvn:jakarta.el/jakarta.el-api/6.0.0</bundle>
+    <bundle>mvn:jakarta.inject/jakarta.inject-api/2.0.1</bundle>
+    <bundle>mvn:jakarta.json.bind/jakarta.json.bind-api/3.0.1</bundle>
+    <bundle>mvn:jakarta.json/jakarta.json-api/2.1.3</bundle>
+    <bundle>mvn:jakarta.xml.bind/jakarta.xml.bind-api/4.0.2</bundle>
+    <bundle>mvn:jakarta.activation/jakarta.activation-api/2.1.3</bundle>
+    <bundle>mvn:jakarta.annotation/jakarta.annotation-api/2.1.1</bundle>
+    <!-- End Jakarta bundles -->
     <bundle>mvn:org.passay/passay/1.4.0</bundle>
     <bundle>mvn:org.webjars/swagger-ui/4.15.5</bundle>
     <bundle>mvn:org.atteo.classindex/classindex/3.13</bundle>
-    <bundle>mvn:org.codehaus.woodstox/stax2-api/4.2.1</bundle>
-    <bundle>mvn:com.fasterxml.woodstox/woodstox-core/6.4.0</bundle>
-    <bundle>mvn:com.fasterxml.jackson.jaxrs/jackson-jaxrs-base/2.14.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.jaxrs/jackson-jaxrs-json-provider/2.14.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.core/jackson-annotations/2.14.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.core/jackson-core/2.14.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.core/jackson-databind/2.14.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-csv/2.14.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-xml/2.14.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-properties/2.14.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.module/jackson-module-jaxb-annotations/2.14.1</bundle>
-    <bundle>mvn:org.bouncycastle/bcprov-jdk15on/1.69</bundle>
-    <bundle>mvn:org.bouncycastle/bcpkix-jdk15on/1.69</bundle>
-    <bundle>mvn:org.bouncycastle/bcmail-jdk15on/1.69</bundle>
+    <!-- Jackson Bundles -->
+    <bundle>mvn:com.fasterxml.jackson.jaxrs/jackson-jaxrs-base/2.17.1</bundle>
+    <bundle>mvn:com.fasterxml.jackson.jaxrs/jackson-jaxrs-json-provider/2.17.1</bundle>
+    <bundle>mvn:com.fasterxml.jackson.core/jackson-annotations/2.17.1</bundle>
+    <bundle>mvn:com.fasterxml.jackson.core/jackson-core/2.17.1</bundle>
+    <bundle>mvn:com.fasterxml.jackson.core/jackson-databind/2.17.1</bundle>
+    <bundle>mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-csv/2.17.1</bundle>
+    <bundle>mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-xml/2.17.1</bundle>
+    <bundle>mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-properties/2.17.1</bundle>
+    <bundle>mvn:com.fasterxml.jackson.module/jackson-module-jaxb-annotations/2.17.1</bundle>
+    <!-- End Jackson Bundles -->
+    <!-- Encryption Bundles -->
+    <bundle>mvn:org.bouncycastle/bcprov-jdk15on/1.68</bundle>
+    <bundle>mvn:org.bouncycastle/bcpkix-jdk15on/1.68</bundle>
+    <bundle>mvn:org.bouncycastle/bcmail-jdk15on/1.68</bundle>
+    <!-- End Encryption Bunedles -->
     <bundle>mvn:org.postgresql/postgresql/42.2.9</bundle>
     <bundle>mvn:it.water.distribution/Water-distribution-osgi/3.0.0</bundle>
   </feature>
