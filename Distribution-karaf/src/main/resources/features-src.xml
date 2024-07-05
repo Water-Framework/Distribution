@@ -16,23 +16,19 @@
   -->
 <!-- TODO versions should be parametrized in order to automatic update this file once a new version is ready to be deployed-->
 <features xmlns="http://karaf.apache.org/xmlns/features/v1.2.0" name="WaterBase-karaf-features">
-  <repository>mvn:org.apache.cxf.karaf/apache-cxf/3.5.5/xml/features</repository>
   <repository>mvn:org.apache.aries.cdi/aries-cdi-feature/1.1.5/xml/features</repository>
   <feature name="water-core-features" version="${project.version}" description="All Water Core Modules">
     <feature>jdbc</feature>
     <feature>jndi</feature>
     <feature>transaction</feature>
     <feature>osgi-cdi-owb</feature>
-    <feature>pax-web-jetty-websockets</feature>
+    <!--<feature>pax-web-jetty-websockets</feature>-->
     <feature>pax-jdbc</feature>
     <feature>pax-jdbc-config</feature>
     <feature>pax-jdbc-pool-dbcp2</feature>
     <feature>scr</feature>
-    <feature version="[3.4,4)">cxf-rs-description-swagger2</feature>
     <bundle>mvn:org.hibernate.validator/hibernate-validator/${project.hibernateValidatorVersion}</bundle>
     <!-- Hibernate JPA required bundles -->
-    <bundle>mvn:org.codehaus.woodstox/stax2-api/4.2.1</bundle>
-    <bundle>mvn:com.fasterxml.woodstox/woodstox-core/6.4.0</bundle>
     <bundle>mvn:org.checkerframework/checker-qual/3.44.0</bundle>
     <bundle>mvn:org.antlr/antlr4-runtime/4.13.1</bundle>
     <bundle>mvn:net.bytebuddy/byte-buddy/1.14.17</bundle>
@@ -41,6 +37,9 @@
     <bundle>mvn:io.smallrye/jandex/3.1.2</bundle>
     <!-- End Hibernate bundles -->
     <!-- Jakarta bundles -->
+    <bundle>mvn:jakarta.ws.rs/jakarta.ws.rs-api/${project.jakartaRsApiVersion}</bundle>
+    <bundle>mvn:jakarta.xml.soap/jakarta.xml.soap-api/${project.jakartaXmlSoapVersion}</bundle>
+    <bundle>mvn:jakarta.xml.ws/jakarta.xml.ws-api/${project.jakartaWsApiVersion}</bundle>
     <bundle>mvn:jakarta.persistence/jakarta.persistence-api/${project.jakartaPersistenceVersion}</bundle>
     <bundle>mvn:jakarta.transaction/jakarta.transaction-api/${project.jakartaTransactionApiVersion}</bundle>
     <bundle>mvn:jakarta.validation/jakarta.validation-api/${project.jakartaValidationVersion}</bundle>
@@ -54,34 +53,71 @@
     <bundle>mvn:jakarta.xml.bind/jakarta.xml.bind-api/${project.jakartaXmlBindVersion}</bundle>
     <bundle>mvn:jakarta.activation/jakarta.activation-api/${project.jakartaActivationVersion}</bundle>
     <bundle>mvn:jakarta.annotation/jakarta.annotation-api/${project.jakartaAnnotationVersion}</bundle>
+    <bundle>mvn:jakarta.servlet/jakarta.servlet-api/${project.jakartaServletVersion}</bundle>
     <!-- End Jakarta bundles -->
-    <bundle>mvn:org.passay/passay/1.4.0</bundle>
-    <bundle>mvn:org.webjars/swagger-ui/4.15.5</bundle>
-    <bundle>mvn:org.atteo.classindex/classindex/3.13</bundle>
     <!-- Jackson Bundles -->
-    <bundle>mvn:com.fasterxml.jackson.jaxrs/jackson-jaxrs-base/2.17.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.jaxrs/jackson-jaxrs-json-provider/2.17.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.core/jackson-annotations/2.17.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.core/jackson-core/2.17.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.core/jackson-databind/2.17.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-csv/2.17.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-xml/2.17.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-properties/2.17.1</bundle>
-    <bundle>mvn:com.fasterxml.jackson.module/jackson-module-jaxb-annotations/2.17.1</bundle>
+    <bundle>mvn:com.fasterxml.jackson.jakarta.rs/jackson-jakarta-rs-base/${project.jacksonVersion}</bundle>
+    <bundle>mvn:com.fasterxml.jackson.jakarta.rs/jackson-jakarta-rs-json-provider/${project.jacksonVersion}</bundle>
+    <bundle>mvn:com.fasterxml.jackson.core/jackson-annotations/${project.jacksonVersion}</bundle>
+    <bundle>mvn:com.fasterxml.jackson.core/jackson-core/${project.jacksonVersion}</bundle>
+    <bundle>mvn:com.fasterxml.jackson.core/jackson-databind/${project.jacksonVersion}</bundle>
+    <bundle>mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-csv/${project.jacksonVersion}</bundle>
+    <bundle>mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-xml/${project.jacksonVersion}</bundle>
+    <bundle>mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/${project.jacksonVersion}</bundle>
+    <bundle>mvn:com.fasterxml.jackson.dataformat/jackson-dataformat-properties/${project.jacksonVersion}</bundle>
+    <bundle>mvn:com.fasterxml.jackson.module/jackson-module-jaxb-annotations/${project.jacksonVersion}</bundle>
+    <bundle>mvn:com.fasterxml.jackson.datatype/jackson-datatype-jsr310/${project.jacksonVersion}</bundle>
     <!-- End Jackson Bundles -->
-    <!-- Encryption Bundles -->
+    <!-- Water needed bundles -->
+    <bundle>mvn:org.javassist/javassist/3.30.2-GA</bundle>
     <bundle>mvn:org.bouncycastle/bcprov-jdk15on/1.68</bundle>
     <bundle>mvn:org.bouncycastle/bcpkix-jdk15on/1.68</bundle>
     <bundle>mvn:org.bouncycastle/bcmail-jdk15on/1.68</bundle>
-    <!-- End Encryption Bunedles -->
+    <bundle>mvn:org.passay/passay/1.4.0</bundle>
+    <bundle>mvn:org.atteo.classindex/classindex/3.13</bundle>
     <bundle>mvn:org.postgresql/postgresql/42.2.9</bundle>
     <bundle>mvn:it.water.distribution/Water-distribution-osgi/${project.version}</bundle>
+    <!-- Water basic bundles -->
   </feature>
   <feature name="water-jpa-repository" version="${project.version}" description="All Water Core and test Modules ">
     <feature>water-core-features</feature>
     <bundle start-level="81">mvn:it.water.repository.jpa/JpaRepository-osgi/${project.version}</bundle>
   </feature>
   <feature name="water-rest" version="${project.version}" description="All Water Core and test Modules ">
+    <!-- CXF 4.X bundles since karaf feature are not available at the time of writing -->
+    <!-- This bundles should be removed when karaf will introduce jakarta ee bundles -->
+    <bundle>mvn:io.github.classgraph/classgraph/4.8.174</bundle>
+    <bundle>mvn:org.apache.commons/commons-lang3/${project.apacheCommonsLang3Version}</bundle>
+    <bundle>mvn:org.codehaus.woodstox/stax2-api/4.2.2</bundle>
+    <bundle>mvn:com.fasterxml.woodstox/woodstox-core/6.6.1</bundle>
+    <bundle start-level="30" dependency="true">mvn:org.apache.ws.xmlschema/xmlschema-core/2.3.1</bundle>
+    <bundle start-level="25" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.xmlresolver/1.2_5</bundle>
+    <bundle start-level="30" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.fastinfoset/2.1.1_1</bundle>
+    <bundle start-level="30" dependency="true">mvn:org.ow2.asm/asm/9.6</bundle>
+
+    <bundle>mvn:org.glassfish.jaxb/jaxb-core/3.0.2</bundle>
+    <bundle>mvn:org.glassfish.jaxb/jaxb-runtime/3.0.2</bundle>
+    <bundle>mvn:com.sun.istack/istack-commons-runtime/4.2.0</bundle>
+    <!-- jakarta validation 2.0.2 needed previous version from swagger -->
+    <bundle>mvn:jakarta.validation/jakarta.validation-api/2.0.2</bundle>
+    <!-- jakarta xml bind 3.x needed previous version from cxf core 4.x -->
+    <bundle>mvn:jakarta.xml.bind/jakarta.xml.bind-api/3.0.1</bundle>
+    <bundle>mvn:org.yaml/snakeyaml/2.2</bundle>
+    <bundle>mvn:io.swagger.core.v3/swagger-core/2.2.20</bundle>
+    <bundle>mvn:io.swagger.core.v3/swagger-jaxrs2-jakarta/2.2.20</bundle>
+    <bundle>mvn:io.swagger.core.v3/swagger-models-jakarta/2.2.20</bundle>
+    <bundle>mvn:io.swagger.core.v3/swagger-annotations-jakarta/2.2.20</bundle>
+    <bundle>mvn:io.swagger.core.v3/swagger-integration-jakarta/2.2.20</bundle>
+    <bundle>mvn:org.webjars/swagger-ui/5.17.14</bundle>
+    <bundle start-level="40">mvn:org.apache.cxf/cxf-core/${project.cxfVersion}</bundle>
+    <bundle start-level="40">mvn:org.apache.cxf/cxf-rt-management/${project.cxfVersion}</bundle>
+    <bundle start-level="40">mvn:org.apache.cxf/cxf-rt-frontend-jaxrs/${project.cxfVersion}</bundle>
+    <bundle start-level="40">mvn:org.apache.cxf/cxf-rt-rs-service-description-common-openapi/${project.cxfVersion}</bundle>
+    <bundle start-level="35">mvn:org.apache.cxf/cxf-rt-rs-service-description-openapi-v3/${project.cxfVersion}</bundle>
+    <bundle start-level="35">mvn:org.apache.cxf/cxf-rt-rs-service-description-swagger-ui/${project.cxfVersion}</bundle>
+    <bundle start-level="35">mvn:org.apache.cxf/cxf-rt-security/${project.cxfVersion}</bundle>
+    <bundle start-level="35">mvn:org.apache.cxf/cxf-rt-transports-http/${project.cxfVersion}</bundle>
+    <!-- End CXF -->
     <feature>water-jpa-repository</feature>
     <bundle start-level="81">mvn:it.water.service.rest/Rest-service/${project.version}</bundle>
     <bundle start-level="81">mvn:it.water.service.rest/Rest-api-manager-apache-cxf/${project.version}</bundle>
