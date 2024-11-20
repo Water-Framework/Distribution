@@ -54,12 +54,33 @@ task extractManifest(type: Copy) {
     into "${buildDir}/extractedManifest"
 }
 
+task karafWaterParentBuild(type: Exec) {
+    workingDir = file('container-src/water-karaf-distribution-parent')
+    commandLine 'mvn', 'clean', 'deploy'
+}
+
+task karafWaterDistributionBuild(type: Exec) {
+    workingDir = file('container-src/water-karaf-distribution')
+    commandLine 'mvn', 'clean', 'deploy'
+}
+
+task karafWaterTestDistributionBuild(type: Exec) {
+    workingDir = file('container-src/water-karaf-distribution-test')
+    commandLine 'mvn', 'clean', 'deploy'
+}
+
 jar {
     enabled false
 }
 
 osgiJar.dependsOn(extractManifest)
 jar.dependsOn(osgiJar)
+
+//---Deploy karaf distributions---
+karafWaterTestDistributionBuild.mustRunAfter karafWaterParentBuild
+karafWaterDistributionBuild.mustRunAfter karafWaterParentBuild
+karafWaterDistributionBuild.mustRunAfter karafWaterTestDistributionBuild
+publish.dependsOn karafWaterParentBuild,karafWaterDistributionBuild,karafWaterTestDistributionBuild
 
 //publish configurations
 publishing {
