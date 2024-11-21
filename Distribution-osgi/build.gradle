@@ -80,7 +80,6 @@ jar.dependsOn(osgiJar)
 karafWaterTestDistributionBuild.mustRunAfter karafWaterParentBuild
 karafWaterDistributionBuild.mustRunAfter karafWaterParentBuild
 karafWaterDistributionBuild.mustRunAfter karafWaterTestDistributionBuild
-publish.dependsOn karafWaterParentBuild,karafWaterDistributionBuild,karafWaterTestDistributionBuild
 
 //publish configurations
 publishing {
