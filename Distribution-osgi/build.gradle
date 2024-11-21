@@ -55,17 +55,17 @@ task extractManifest(type: Copy) {
 }
 
 task karafWaterParentBuild(type: Exec) {
-    workingDir = file('container-src/water-karaf-distribution-parent')
+    workingDir = file('containers-src/water-karaf-distribution-parent')
     commandLine 'mvn', 'clean', 'deploy','-Dkaraf.version='+project.karafVersion,'-Dwater.version='+project.version
 }
 
 task karafWaterDistributionBuild(type: Exec) {
-    workingDir = file('container-src/water-karaf-distribution')
+    workingDir = file('containers-src/water-karaf-distribution')
     commandLine 'mvn', 'clean', 'deploy','-Dkaraf.version='+project.karafVersion,'-Dwater.version='+project.version
 }
 
 task karafWaterTestDistributionBuild(type: Exec) {
-    workingDir = file('container-src/water-karaf-distribution-test')
+    workingDir = file('containers-src/water-karaf-distribution-test')
     commandLine 'mvn', 'clean', 'deploy','-Dkaraf.version='+project.karafVersion,'-Dwater.version='+project.version
 }
 
