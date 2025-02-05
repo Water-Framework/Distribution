@@ -47,12 +47,6 @@
 		<Set name="sendDateHeader">false</Set>
 		<Set name="headerCacheSize">512</Set>
 	</New>
-
-	<Property name="Server">
-	  <Call id="jdbcIdMgr" name="getAttribute">
-	    <Arg>jdbcIdMgr</Arg>
-	  </Call>
-	</Property>
 	
 	<!-- Dedicated connector for high websocket traffic and connections -->
 	<Call name="addConnector">

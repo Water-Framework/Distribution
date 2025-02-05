@@ -100,6 +100,8 @@
     <feature>water-jpa-repository</feature>
     <bundle start-level="81">mvn:it.water.service.rest/Rest-service/${project.version}</bundle>
     <bundle start-level="81">mvn:it.water.service.rest/Rest-api-manager-apache-cxf/${project.version}</bundle>
+    <bundle start-level="82">mvn:it.water.user/User-service/${project.version}</bundle>
+    <bundle start-level="82">mvn:it.water.authentication/Authentication-service/${project.version}</bundle>
   </feature>
   <feature name="water-core-features-test" version="${project.version}" description="All Water Core and test Modules ">
     <feature>water-rest</feature>
