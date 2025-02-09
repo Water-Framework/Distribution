@@ -91,7 +91,7 @@
   </feature>
   <feature name="water-rest" version="3.0.0" description="All Water Core and test Modules ">
     <!-- CXF 3.5.8 bundles since karaf feature are not available at the time of writing -->
-    <!-- This bundles should be removed when karaf will introduce jakarta ee bundles -->
+    <!-- These bundles should be removed when karaf will introduce jakarta ee bundles -->
     <bundle>mvn:org.codehaus.woodstox/stax2-api/4.2.1</bundle>
     <bundle>mvn:org.webjars/swagger-ui/4.15.5</bundle>
     <bundle>mvn:jakarta.annotation/jakarta.annotation-api/2.1.1</bundle>
