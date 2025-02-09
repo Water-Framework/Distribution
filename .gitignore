@@ -13,3 +13,5 @@ gradlew
 gradlew.bat
 gradle
 .gradle
+/Distribution-osgi/target/
+/Distribution-osgi/containers-src/water-karaf-distribution-archetype/target/

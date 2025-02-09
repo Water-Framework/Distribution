@@ -1,4 +1,4 @@
-<!--
+<?xml version="1.0" encoding="UTF-8"?><!--
   ~ Copyright 2024 Aristide Cittadino
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License")
@@ -14,41 +14,138 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    
+  <modelVersion>4.0.0</modelVersion>
+    
+  <groupId>it.water.container</groupId>
+    
+  <artifactId>water-karaf-distribution</artifactId>
+    
+  <version>${water.version}</version>
+    
+  <packaging>karaf-assembly</packaging>
+    
+  <name>Water</name>
+    
+  <description>Water karaf runtime with water framework used for testing purpose</description>
+    
+  <properties>
+        
+    <water.version>${water.version}</water.version>
+        
+    <karaf.version>${karaf.version}</karaf.version>
+        
+    <pax.exam.version>4.13.4</pax.exam.version>
+      
+  </properties>
+    
+  <parent>
+        
     <groupId>it.water.container</groupId>
-    <artifactId>water-karaf-distribution</artifactId>
-    <version>${water.version}</version>
-    <packaging>maven-archetype</packaging>
-
-    <properties>
-        <water.version>${water.version}</water.version>
-    </properties>
-
-    <repositories>
-        <repository>
-            <id>it.water</id>
-            <name>Water nexus</name>
-            <url>https://nexus.acsoftware.it/nexus/repository/maven-water/</url>
-        </repository>
-    </repositories>
-
-    <distributionManagement>
-        <repository>
-            <id>it.water</id>
-            <name>water nexus</name>
-            <url>https://nexus.acsoftware.it/nexus/repository/maven-water/</url>
-        </repository>
-    </distributionManagement>
-
-    <build>
-        <extensions>
-            <extension>
-                <groupId>org.apache.maven.archetype</groupId>
-                <artifactId>archetype-packaging</artifactId>
-                <version>3.1.1</version>
-            </extension>
-        </extensions>
-    </build>
+        
+    <artifactId>water-karaf-distribution-parent</artifactId>
+        
+    <version>3.0.0_karaf_4.4.6</version>
+      
+  </parent>
+    
+  <repositories>
+        
+    <repository>
+            
+      <id>it.water</id>
+            
+      <name>water nexus</name>
+            
+      <url>https://nexus.acsoftware.it/nexus/repository/maven-water/</url>
+          
+    </repository>
+      
+  </repositories>
+    
+  <distributionManagement>
+        
+    <repository>
+            
+      <id>it.water</id>
+            
+      <name>water nexus</name>
+            
+      <url>https://nexus.acsoftware.it/nexus/repository/maven-water/</url>
+          
+    </repository>
+      
+  </distributionManagement>
+    
+  <dependencies/>
+    
+  <build>
+        
+    <plugins>
+            
+      <plugin>
+                
+        <groupId>org.apache.karaf.tooling</groupId>
+                
+        <artifactId>karaf-maven-plugin</artifactId>
+                
+        <version>${karaf.version}</version>
+                
+        <extensions>true</extensions>
+                
+        <configuration>
+                    
+          <bootFeatures>
+                        
+            <feature>standard</feature>
+                        
+            <feature>pax-jdbc-h2</feature>
+            <!--installing all basic bundles rest basic features inclided -->
+            <feature>water-rest</feature>
+                      
+          </bootFeatures>
+                  
+        </configuration>
+              
+      </plugin>
+            
+      <plugin>
+                
+        <artifactId>maven-antrun-plugin</artifactId>
+                
+        <executions>
+                    
+          <execution>
+                        
+            <id>fix-distro</id>
+                        
+            <phase>prepare-package</phase>
+                        
+            <goals>
+                            
+              <goal>run</goal>
+                          
+            </goals>
+                        
+            <configuration>
+                            
+              <tasks>
+                                
+                <delete dir="${project.build.directory}/assembly/system/it/water" includeemptydirs="true"/>
+                              
+              </tasks>
+                          
+            </configuration>
+                      
+          </execution>
+                  
+        </executions>
+              
+      </plugin>
+          
+    </plugins>
+      
+  </build>
+  
 </project>
