@@ -82,12 +82,12 @@
     <bundle>mvn:org.passay/passay/1.4.0</bundle>
     <bundle>mvn:org.atteo.classindex/classindex/3.13</bundle>
     <bundle>mvn:org.postgresql/postgresql/42.2.9</bundle>
-    <bundle>mvn:it.water.distribution/Water-distribution-osgi/${project.version}</bundle>
+    <bundle start-level="78">mvn:it.water.distribution/Water-distribution-osgi/${project.version}</bundle>
     <!-- Water basic bundles -->
   </feature>
   <feature name="water-jpa-repository" version="${project.version}" description="All Water Core and test Modules ">
     <feature>water-core-features</feature>
-    <bundle start-level="81">mvn:it.water.repository.jpa/JpaRepository-osgi/${project.version}</bundle>
+    <bundle start-level="79">mvn:it.water.repository.jpa/JpaRepository-osgi/${project.version}</bundle>
   </feature>
   <feature name="water-rest" version="${project.version}" description="All Water Core and test Modules ">
     <!-- CXF 3.5.8 bundles since karaf feature are not available at the time of writing -->
@@ -98,12 +98,12 @@
     <bundle>mvn:org.glassfish.jersey.core/jersey-common/3.1.7</bundle>
     <bundle>mvn:org.glassfish.hk2/osgi-resource-locator/1.0.3</bundle>
     <feature>water-jpa-repository</feature>
-    <bundle start-level="81">mvn:it.water.service.rest/Rest-service/${project.version}</bundle>
+    <bundle start-level="80">mvn:it.water.service.rest/Rest-service/${project.version}</bundle>
     <bundle start-level="81">mvn:it.water.service.rest/Rest-api-manager-apache-cxf/${project.version}</bundle>
   </feature>
   <feature name="water-core-features-test" version="${project.version}" description="All Water Core and test Modules ">
     <feature>water-rest</feature>
-    <bundle start-level="81">mvn:it.water.osgi.test.bundle/Water-osgi-test-bundle/${project.version}</bundle>
-    <bundle start-level="81">mvn:it.water.osgi.test.bundle/Water-osgi-test-bundle-entity/${project.version}</bundle>
+    <bundle start-level="83">mvn:it.water.osgi.test.bundle/Water-osgi-test-bundle/${project.version}</bundle>
+    <bundle start-level="83">mvn:it.water.osgi.test.bundle/Water-osgi-test-bundle-entity/${project.version}</bundle>
   </feature>
 </features>
