@@ -262,4 +262,3 @@ The following architectural and technical elements warrant additional exploratio
 ## Attribution
 
 Generated with the support of ArchAI, an automated documentation system.
-```
