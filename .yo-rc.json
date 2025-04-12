@@ -1,5 +1,6 @@
 {
   "generator-water": {
+    "hasSonarqubeIntegration": true,
     "publishRepo": true,
     "publishRepoName": "asc-water-repository",
     "publishRepoUrl": "https://nexus.acsoftware.it/nexus/repository/maven-water/",
