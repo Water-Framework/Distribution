@@ -1,0 +1,51 @@
+dependencies {
+    //SLF4J
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: project.slf4jVersion
+    //Atteo
+    implementation 'org.atteo.classindex:classindex:' + project.atteoClassIndexVersion
+    annotationProcessor('org.atteo.classindex:classindex:' + project.atteoClassIndexVersion)
+    //Lombok
+    implementation group: 'org.projectlombok', name: 'lombok', version: project.lombokVersion
+    annotationProcessor 'org.projectlombok:lombok:' + project.lombokVersion
+    //Validation
+    implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: project.jakartaValidationVersion
+    //Core Water Deps
+    implementation group: 'it.water.distribution', name: 'Water-distribution-spring', version: project.waterVersion
+    // JPA Repository
+    implementation 'it.water.repository.jpa:JpaRepository-spring:'+project.waterVersion
+    //hibernate validator
+    implementation group: "org.hibernate", name: "hibernate-validator", version: project.hibernateValidatorVersion
+    //Rest Modules
+    implementation group: 'it.water.service.rest', name: 'Rest-spring-api', version: project.waterVersion
+    //Spring Boot
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-aop', version: project.springBootVersion
+    implementation group: 'org.springframework.data', name: 'spring-data-jpa', version: project.springBootVersion
+    //In-memory DB
+    implementation group: 'org.hsqldb', name: 'hsqldb', version: '2.4.1'
+
+    //testImplementation group: 'it.water.core', name: 'Core-testing-utils', version: project.waterVersion
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:' + project.springBootVersion
+    testAnnotationProcessor 'org.projectlombok:lombok:' + project.lombokVersion
+    testAnnotationProcessor('org.atteo.classindex:classindex:' + project.atteoClassIndexVersion)
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:' + project.junitJupiterVersion
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:' + project.junitJupiterVersion
+    testImplementation 'org.atteo.classindex:classindex:' + project.atteoClassIndexVersion
+}
+
+test {
+    useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        springApp(MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+waterDescriptor {
+    moduleId    = 'it.water.distribution.spring.app'
+    displayName = 'Distribution Spring Application'
+    description = 'Minimal Spring Boot application with Water Framework enabled'
+}
