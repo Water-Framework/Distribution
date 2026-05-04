@@ -1,0 +1,12 @@
+src/
+extraLib/
+.gradle/
+.idea/
+*.md
+*.config
+build/classes/
+build/generated/
+build/resources/
+build/tmp/
+build/water/
+build/publications/
