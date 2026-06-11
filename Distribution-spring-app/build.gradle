@@ -9,6 +9,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:' + project.lombokVersion
     //Validation
     implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: project.jakartaValidationVersion
+    implementation group: "org.passay", name: "passay", version: project.passayVersion
     //Core Water Deps
     implementation group: 'it.water.distribution', name: 'Water-distribution-spring', version: project.waterVersion
     // JPA Repository
