@@ -13,10 +13,11 @@ Applicazione Spring Boot minimale con Water Framework abilitato. Funge da punto 
 5. [Creazione e avvio del container Docker](#5-creazione-e-avvio-del-container-docker)
 6. [Riferimento variabili d'ambiente](#6-riferimento-variabili-dambiente)
 7. [Sistema di estensione runtime (extlib)](#7-sistema-di-estensione-runtime-extlib)
-8. [Configurazione database](#8-configurazione-database)
-9. [Configurazione certificati e keystore](#9-configurazione-certificati-e-keystore)
-10. [Health check](#10-health-check)
-11. [Best practice per la produzione](#11-best-practice-per-la-produzione)
+8. [Provisioning dinamico dei moduli da repository Maven](#8-provisioning-dinamico-dei-moduli-da-repository-maven)
+9. [Configurazione database](#9-configurazione-database)
+10. [Configurazione certificati e keystore](#10-configurazione-certificati-e-keystore)
+11. [Health check](#11-health-check)
+12. [Best practice per la produzione](#12-best-practice-per-la-produzione)
 
 ---
 
@@ -81,20 +82,27 @@ yo water:help          # deve rispondere con la lista dei comandi
 # Attiva la versione Node corretta (se si usa NVM)
 source /opt/homebrew/Cellar/nvm/0.39.0/nvm.sh && nvm use 18.20.8
 
-yo water:build --projects Distribution-spring-app
+# Distribution-spring-app è un subprogetto del build Gradle "Distribution":
+# si builda passando il progetto registrato "Distribution" (non "Distribution-spring-app").
+yo water:build --projects Distribution
 ```
 
 ### Build completa dalla radice (con tutte le dipendenze)
 
 ```bash
-yo water:build --projects Core,Implementation,Repository,JpaRepository,Rest,Distribution-spring-app
+yo water:build --projects Core,Implementation,Repository,JpaRepository,Rest,Distribution
 ```
 
-L'artefatto prodotto si trova in:
+L'artefatto prodotto è un **fat JAR eseguibile** (~64MB, tutte le dipendenze incluse,
+`Main-Class: it.water.distribution.spring.app.WaterLauncher`) creato via Gradle Shadow:
 
 ```
 Distribution-spring-app/build/libs/Distribution-spring-app-3.0.0.jar
 ```
+
+> Il fat JAR è prodotto **senza** il plugin Spring Boot: lo `shadowJar` merge-a i descrittori
+> Atteo ClassIndex (`META-INF/annotations`), i `META-INF/services` e i descrittori Spring
+> (`spring.factories`, `AutoConfiguration.imports`) necessari all'auto-configurazione.
 
 ---
 
@@ -153,7 +161,7 @@ export DB_USERNAME=water_user
 export DB_PASSWORD=changeme
 
 # Keystore
-export WATER_KEYSTORE_FILE=file:/opt/water/certs/server.keystore
+export WATER_KEYSTORE_FILE=/opt/water/certs/server.keystore
 export WATER_KEYSTORE_PASSWORD=changeme
 export WATER_PRIVATE_KEY_PASSWORD=changeme
 
@@ -220,7 +228,7 @@ docker run -d \
   -e DB_PASSWORD=secret \
   -e DB_POOL_SIZE=20 \
   -e WATER_KEYSTORE_TYPE=jks \
-  -e WATER_KEYSTORE_FILE=file:/certs/server.keystore \
+  -e WATER_KEYSTORE_FILE=/certs/server.keystore \
   -e WATER_KEYSTORE_PASSWORD=changeme \
   -e WATER_KEYSTORE_ALIAS=server-cert \
   -e WATER_PRIVATE_KEY_PASSWORD=changeme \
@@ -272,7 +280,7 @@ services:
 
       # Keystore
       WATER_KEYSTORE_TYPE: jks
-      WATER_KEYSTORE_FILE: file:/certs/server.keystore
+      WATER_KEYSTORE_FILE: /certs/server.keystore
       WATER_KEYSTORE_PASSWORD: changeme
       WATER_KEYSTORE_ALIAS: server-cert
       WATER_PRIVATE_KEY_PASSWORD: changeme
@@ -322,6 +330,15 @@ Tutte le variabili hanno un valore di default applicato sia in `application.prop
 | `EXTRA_CLASSPATH_DIR` | `/extlib` | Directory da cui `WaterLauncher` carica i JAR aggiuntivi prima dell'avvio di Spring |
 | `EXTRA_SCAN_PACKAGES` | *(vuoto)* | Pacchetti aggiuntivi da passare a `@ComponentScan`. Separati da virgola. Necessari solo per moduli fuori da `it.water.*` |
 
+### Provisioning dinamico moduli (vedi sez. 8)
+
+| Variabile | Default | Descrizione |
+|---|---|---|
+| `WATER_MODULES` | *(vuoto)* | Lista coordinate Maven `groupId:artifactId:version` separate da virgola, scaricate in `/extlib` all'avvio |
+| `WATER_MAVEN_REPO_<n>_URL` | *(vuoto)* | Base URL del repository n-esimo (`n`=1,2,3,...), provati in ordine con failover |
+| `WATER_MAVEN_REPO_<n>_USER` | *(vuoto)* | Username opzionale per il repo n-esimo |
+| `WATER_MAVEN_REPO_<n>_PASSWORD` | *(vuoto)* | Password/token opzionale per il repo n-esimo |
+
 ### Modalità test
 
 | Variabile | Default | Descrizione |
@@ -333,7 +350,7 @@ Tutte le variabili hanno un valore di default applicato sia in `application.prop
 | Variabile | Default | Descrizione |
 |---|---|---|
 | `WATER_KEYSTORE_TYPE` | `jks` | Tipo di keystore: `jks` o `pkcs12` |
-| `WATER_KEYSTORE_FILE` | `classpath:certs` | Percorso del keystore. Usa `classpath:` per risorse interne o `file:` per path assoluto esterno |
+| `WATER_KEYSTORE_FILE` | `/app/default-certs/server.keystore` (fallback container) | **Path di file semplice** del keystore (es. `/certs/server.keystore`) oppure `classpath:...`. **Non** usare il prefisso `file:`. Se la variabile è assente, l'entrypoint usa il keystore demo generato nell'immagine (vedi nota sotto) |
 | `WATER_KEYSTORE_PASSWORD` | `water.` | Password del keystore |
 | `WATER_KEYSTORE_ALIAS` | `server-cert` | Alias del certificato server nel keystore |
 | `WATER_PRIVATE_KEY_PASSWORD` | `water.` | Password della chiave privata |
@@ -414,7 +431,98 @@ docker run -d \
 
 ---
 
-## 8. Configurazione database
+## 8. Provisioning dinamico dei moduli da repository Maven
+
+Oltre al deposito statico di JAR in `/extlib` (volume montato o `extraLib/` baked nell'immagine), il container può **scaricare a runtime** i moduli Water direttamente da uno o più repository Maven, senza ricostruire l'immagine né montare volumi.
+
+### Come funziona
+
+```
+container start
+   └─ entrypoint.sh
+        ├─ 1. legge WATER_MODULES (lista coordinate Maven)
+        ├─ 2. legge i repository WATER_MAVEN_REPO_<n>_URL/USER/PASSWORD
+        ├─ 3. per ogni modulo → scarica il jar in /extlib (failover sui repo)
+        ├─ 4. fail-fast se un modulo non è risolvibile in NESSUN repo
+        └─ 5. exec java -jar app.jar   ← le env del container sono ereditate
+                  └─ WaterLauncher carica /extlib come già documentato (sez. 7)
+```
+
+Le variabili d'ambiente del container vengono **ereditate automaticamente** dal processo `java` (l'entrypoint usa `exec`): non serve alcun forward manuale, l'app Spring le risolve tramite i placeholder `${VAR:default}` in `application.properties`.
+
+### Variabili di configurazione
+
+| Variabile | Descrizione |
+|---|---|
+| `WATER_MODULES` | Lista di coordinate Maven `groupId:artifactId:version` separate da virgola. Se vuota, nessun download (retrocompatibilità con volume/`extraLib`). |
+| `WATER_MAVEN_REPO_<n>_URL` | Base URL del repository n-esimo (`n` = 1, 2, 3, ...). Iterati in ordine finché valorizzati. |
+| `WATER_MAVEN_REPO_<n>_USER` | *(opzionale)* Username per il repo n-esimo. |
+| `WATER_MAVEN_REPO_<n>_PASSWORD` | *(opzionale)* Password/token per il repo n-esimo. |
+
+### Comportamento
+
+- **Download flat**: viene scaricato **solo** il JAR del modulo (nessuna risoluzione di dipendenze transitive). Le dipendenze non-Water (es. driver JDBC) devono essere già nel JAR principale — vedi nota sez. 5.4.
+- **Failover**: per ogni modulo i repository vengono provati nell'ordine `1, 2, 3, ...`; vince il **primo** che risponde HTTP 200. Il log indica da quale repo è stato preso ogni modulo.
+- **Auth per-repo**: se per un repo sono valorizzati `_USER`/`_PASSWORD`, `curl` usa l'autenticazione basic verso quel repo.
+- **Fail-fast** (coerente con la politica del keystore):
+  - modulo non trovato in nessun repo → `exit 1` prima di avviare Spring;
+  - `WATER_MODULES` valorizzata ma nessun repo configurato → `exit 1`;
+  - coordinata malformata (≠ `groupId:artifactId:version`) → `exit 1`;
+  - versione `*-SNAPSHOT` → `exit 1` (non supportata: richiederebbe la risoluzione di `maven-metadata.xml`).
+
+> **URL costruito**: `<repoBaseUrl>/<groupId con / al posto dei .>/<artifactId>/<version>/<artifactId>-<version>.jar`
+
+### Esempio `docker run`
+
+```bash
+docker run -d \
+  --name water-app \
+  -p 8080:8080 \
+  -e WATER_MODULES="it.water.user:User-service-spring:3.0.0,it.water.authentication:Authentication-service-spring:3.0.0" \
+  -e WATER_MAVEN_REPO_1_URL="https://nexus.azienda.it/repository/maven-releases" \
+  -e WATER_MAVEN_REPO_1_USER="ci-reader" \
+  -e WATER_MAVEN_REPO_1_PASSWORD="s3cr3t" \
+  -e WATER_MAVEN_REPO_2_URL="https://repo1.maven.org/maven2" \
+  -e WATER_KEYSTORE_TYPE=jks \
+  -e WATER_KEYSTORE_FILE=/certs/server.keystore \
+  -e WATER_KEYSTORE_PASSWORD=changeme \
+  -e WATER_PRIVATE_KEY_PASSWORD=changeme \
+  -v /host/certs:/certs:ro \
+  water-spring-app:latest
+```
+
+### Esempio Docker Compose
+
+```yaml
+services:
+  water-app:
+    image: water-spring-app:latest
+    ports:
+      - "8080:8080"
+    environment:
+      # Moduli scaricati a runtime
+      WATER_MODULES: "it.water.user:User-service-spring:3.0.0,it.water.authentication:Authentication-service-spring:3.0.0"
+
+      # Repository in ordine di failover
+      WATER_MAVEN_REPO_1_URL: "https://nexus.azienda.it/repository/maven-releases"
+      WATER_MAVEN_REPO_1_USER: "ci-reader"
+      WATER_MAVEN_REPO_1_PASSWORD: "s3cr3t"
+      WATER_MAVEN_REPO_2_URL: "https://repo1.maven.org/maven2"
+
+      # Keystore (fail-fast, vedi sez. 10)
+      WATER_KEYSTORE_TYPE: jks
+      WATER_KEYSTORE_FILE: /certs/server.keystore
+      WATER_KEYSTORE_PASSWORD: changeme
+      WATER_PRIVATE_KEY_PASSWORD: changeme
+    volumes:
+      - ./certs:/certs:ro
+```
+
+> **Combinabile con `/extlib`**: i JAR scaricati da `WATER_MODULES` si **aggiungono** a quelli già presenti in `/extlib` (volume o `extraLib`), non li sostituiscono.
+
+---
+
+## 9. Configurazione database
 
 ### Default: HSQLDB in-memory (sviluppo / test)
 
@@ -470,22 +578,29 @@ oppure gestendo le migrazioni con Flyway o Liquibase.
 
 ---
 
-## 9. Configurazione certificati e keystore
+## 10. Configurazione certificati e keystore
 
-### Certificati inclusi (solo sviluppo)
+### Keystore demo del container (solo sviluppo/test)
 
-Il JAR include certificati autofirmati in `classpath:certs/`:
+Il **JAR non contiene alcun certificato** (fix di sicurezza #1: nessuna chiave nota nell'artefatto,
+`WATER_KEYSTORE_FILE` mancante → fail-fast). Il certificato demo è invece una **proprietà del container**:
+l'immagine ne genera uno con `keytool` a build time in `/app/default-certs/server.keystore`
+(alias `server-cert`, password `water.`).
 
+Comportamento dell'entrypoint:
+- se `WATER_KEYSTORE_FILE` **è impostata** → si usa quel keystore (path semplice, es. `/certs/server.keystore`);
+- se `WATER_KEYSTORE_FILE` **è assente** → fallback automatico al keystore demo `/app/default-certs/server.keystore`,
+  con un warning nei log.
+
+Questo permette di far partire il container direttamente per le prove:
+
+```bash
+docker run -p 8080:8080 water-spring-app:3.0.0   # parte col keystore demo, senza montare nulla
 ```
-certs/
-├─ server.keystore       ← JKS (alias: server-cert, password: water.)
-├─ server.truststore     ← JKS
-├─ serverkeystore.p12    ← PKCS12 alternativo
-├─ diagserverCA.pem      ← CA certificate
-└─ diagserverCA.key      ← CA private key
-```
 
-> **Attenzione**: i certificati embedded hanno password `water.` e sono validi solo per sviluppo locale. Non usarli in produzione.
+> **Attenzione**: il keystore demo ha password `water.` ed è valido solo per sviluppo/test.
+> In produzione fornire SEMPRE un keystore esterno via `WATER_KEYSTORE_FILE` (vedi sotto).
+> Il jar eseguito fuori dal container resta fail-fast: senza `WATER_KEYSTORE_FILE` non parte.
 
 ### Keystore esterno (produzione)
 
@@ -496,7 +611,7 @@ Montare il keystore come volume e puntarvi tramite variabile d'ambiente:
 docker run -d \
   -v /host/certs:/certs:ro \
   -e WATER_KEYSTORE_TYPE=jks \
-  -e WATER_KEYSTORE_FILE=file:/certs/server.keystore \
+  -e WATER_KEYSTORE_FILE=/certs/server.keystore \
   -e WATER_KEYSTORE_PASSWORD=strongpassword \
   -e WATER_KEYSTORE_ALIAS=server-cert \
   -e WATER_PRIVATE_KEY_PASSWORD=strongpassword \
@@ -508,7 +623,7 @@ docker run -d \
 docker run -d \
   -v /host/certs:/certs:ro \
   -e WATER_KEYSTORE_TYPE=pkcs12 \
-  -e WATER_KEYSTORE_FILE=file:/certs/serverkeystore.p12 \
+  -e WATER_KEYSTORE_FILE=/certs/serverkeystore.p12 \
   -e WATER_KEYSTORE_PASSWORD=strongpassword \
   -e WATER_KEYSTORE_ALIAS=server-cert \
   -e WATER_PRIVATE_KEY_PASSWORD=strongpassword \
@@ -531,7 +646,7 @@ keytool -genkeypair \
 
 ---
 
-## 10. Health check
+## 11. Health check
 
 Il Dockerfile configura un health check TCP automatico:
 
@@ -556,7 +671,7 @@ docker inspect --format='{{.State.Health.Status}}' water-app
 
 ---
 
-## 11. Best practice per la produzione
+## 12. Best practice per la produzione
 
 ### Sicurezza
 
