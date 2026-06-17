@@ -1,122 +1,122 @@
 # Distribution-spring-app
 
-Applicazione Spring Boot minimale con Water Framework abilitato. Funge da punto di ingresso eseguibile per tutti i moduli Water in ambiente Spring/Spring Boot e supporta l'estensione dinamica a runtime tramite JAR esterni.
+Minimal Spring Boot application with the Water Framework enabled. It acts as the executable entry point for all Water modules in a Spring/Spring Boot environment and supports dynamic runtime extension through external JARs.
 
 ---
 
-## Indice
+## Table of contents
 
-1. [Panoramica architetturale](#1-panoramica-architetturale)
-2. [Prerequisiti](#2-prerequisiti)
-3. [Build del modulo](#3-build-del-modulo)
-4. [Avvio come Java runner classico](#4-avvio-come-java-runner-classico)
-5. [Creazione e avvio del container Docker](#5-creazione-e-avvio-del-container-docker)
-6. [Riferimento variabili d'ambiente](#6-riferimento-variabili-dambiente)
-7. [Sistema di estensione runtime (extlib)](#7-sistema-di-estensione-runtime-extlib)
-8. [Provisioning dinamico dei moduli da repository Maven](#8-provisioning-dinamico-dei-moduli-da-repository-maven)
-9. [Configurazione database](#9-configurazione-database)
-10. [Configurazione certificati e keystore](#10-configurazione-certificati-e-keystore)
+1. [Architectural overview](#1-architectural-overview)
+2. [Prerequisites](#2-prerequisites)
+3. [Building the module](#3-building-the-module)
+4. [Running as a classic Java runner](#4-running-as-a-classic-java-runner)
+5. [Building and running the Docker container](#5-building-and-running-the-docker-container)
+6. [Environment variables reference](#6-environment-variables-reference)
+7. [Runtime extension system (extlib)](#7-runtime-extension-system-extlib)
+8. [Dynamic module provisioning from Maven repositories](#8-dynamic-module-provisioning-from-maven-repositories)
+9. [Database configuration](#9-database-configuration)
+10. [Certificate and keystore configuration](#10-certificate-and-keystore-configuration)
 11. [Health check](#11-health-check)
-12. [Best practice per la produzione](#12-best-practice-per-la-produzione)
+12. [Production best practices](#12-production-best-practices)
 
 ---
 
-## 1. Panoramica architetturale
+## 1. Architectural overview
 
-Il modulo è composto da due classi principali che lavorano in sequenza:
+The module is made of two main classes that work in sequence:
 
 ```
 java -jar app.jar
        │
        ▼
-  WaterLauncher.main()           ← entry point effettivo
+  WaterLauncher.main()           ← actual entry point
        │
-       ├─ 1. Legge water.extra.classpath.dir (application.properties / env)
-       ├─ 2. Costruisce URLClassLoader con tutti i .jar in /extlib
-       ├─ 3. Legge it.water.application.properties da ogni JAR esterno
-       ├─ 4. Registra le proprietà esterne come WaterPropertiesPropertySource
+       ├─ 1. Reads water.extra.classpath.dir (application.properties / env)
+       ├─ 2. Builds a URLClassLoader with all the .jar files in /extlib
+       ├─ 3. Reads it.water.application.properties from each external JAR
+       ├─ 4. Registers the external properties as a WaterPropertiesPropertySource
        │
        ▼
   SpringApplication.run(WaterSpringApplication.class)
        │
-       ├─ @EnableWaterFramework      → registra tutta l'infrastruttura Water
-       ├─ @EnableJpaRepositories     → configura RepositoryFactory su it.water.*
-       ├─ @EntityScan("it.water")    → scansione JPA entità su tutti i moduli
-       └─ @ComponentScan("it.water") → scansione Spring bean su tutti i moduli
+       ├─ @EnableWaterFramework      → registers all Water infrastructure
+       ├─ @EnableJpaRepositories     → configures RepositoryFactory over it.water.*
+       ├─ @EntityScan("it.water")    → JPA entity scan across all modules
+       └─ @ComponentScan("it.water") → Spring bean scan across all modules
 ```
 
-### Perché due classi?
+### Why two classes?
 
-`WaterLauncher` esegue il setup del classloader **prima** che Spring inizializzi il contesto applicativo. Questo permette ai JAR depositati in `/extlib` di essere visibili a Spring durante la fase di auto-configurazione, consentendo l'aggiunta di moduli Water a runtime senza ricompilare il JAR principale.
+`WaterLauncher` sets up the classloader **before** Spring initializes the application context. This makes the JARs dropped into `/extlib` visible to Spring during auto-configuration, allowing Water modules to be added at runtime without recompiling the main JAR.
 
 ---
 
-## 2. Prerequisiti
+## 2. Prerequisites
 
-| Componente | Versione minima |
+| Component | Minimum version |
 |---|---|
 | Java JDK | 17 |
-| Gradle | 7.x (gestito dal wrapper) |
-| Node.js (per il generator) | 18.20.8 |
-| Yeoman + yo water | vedi setup NVM |
-| Docker (opzionale) | 20.x+ |
+| Gradle | 7.x (managed by the wrapper) |
+| Node.js (for the generator) | 18.20.8 |
+| Yeoman + yo water | see NVM setup |
+| Docker (optional) | 20.x+ |
 
-Verifica ambiente:
+Environment check:
 
 ```bash
-java -version          # deve mostrare openjdk 17+
-gradle --version       # oppure ./gradlew --version
+java -version          # must show openjdk 17+
+gradle --version       # or ./gradlew --version
 node --version         # v18.20.8
-yo water:help          # deve rispondere con la lista dei comandi
+yo water:help          # must respond with the list of commands
 ```
 
 ---
 
-## 3. Build del modulo
+## 3. Building the module
 
-> **Regola**: usare sempre `yo water:build` — mai `./gradlew` direttamente.
+> **Rule**: always use `yo water:build` — never `./gradlew` directly.
 
-### Build singolo modulo
+### Single-module build
 
 ```bash
-# Attiva la versione Node corretta (se si usa NVM)
+# Activate the correct Node version (if using NVM)
 source /opt/homebrew/Cellar/nvm/0.39.0/nvm.sh && nvm use 18.20.8
 
-# Distribution-spring-app è un subprogetto del build Gradle "Distribution":
-# si builda passando il progetto registrato "Distribution" (non "Distribution-spring-app").
+# Distribution-spring-app is a subproject of the "Distribution" Gradle build:
+# build it by passing the registered project "Distribution" (not "Distribution-spring-app").
 yo water:build --projects Distribution
 ```
 
-### Build completa dalla radice (con tutte le dipendenze)
+### Full build from the root (with all dependencies)
 
 ```bash
 yo water:build --projects Core,Implementation,Repository,JpaRepository,Rest,Distribution
 ```
 
-L'artefatto prodotto è un **fat JAR eseguibile** (~64MB, tutte le dipendenze incluse,
-`Main-Class: it.water.distribution.spring.app.WaterLauncher`) creato via Gradle Shadow:
+The produced artifact is an **executable fat JAR** (~64MB, all dependencies included,
+`Main-Class: it.water.distribution.spring.app.WaterLauncher`) created via Gradle Shadow:
 
 ```
 Distribution-spring-app/build/libs/Distribution-spring-app-3.0.0.jar
 ```
 
-> Il fat JAR è prodotto **senza** il plugin Spring Boot: lo `shadowJar` merge-a i descrittori
-> Atteo ClassIndex (`META-INF/annotations`), i `META-INF/services` e i descrittori Spring
-> (`spring.factories`, `AutoConfiguration.imports`) necessari all'auto-configurazione.
+> The fat JAR is built **without** the Spring Boot plugin: `shadowJar` merges the
+> Atteo ClassIndex descriptors (`META-INF/annotations`), the `META-INF/services` files and the Spring
+> descriptors (`spring.factories`, `AutoConfiguration.imports`) required for auto-configuration.
 
 ---
 
-## 4. Avvio come Java runner classico
+## 4. Running as a classic Java runner
 
-### Avvio minimale (database in-memory, configurazione default)
+### Minimal start (in-memory database, default configuration)
 
 ```bash
 java -jar Distribution-spring-app-3.0.0.jar
 ```
 
-L'applicazione sarà raggiungibile su `http://localhost:8080/water`.
+The application will be reachable at `http://localhost:8080/water`.
 
-### Avvio con variabili d'ambiente personalizzate
+### Start with custom environment variables
 
 ```bash
 java \
@@ -129,11 +129,11 @@ java \
   -jar Distribution-spring-app-3.0.0.jar
 ```
 
-Le variabili possono essere passate indifferentemente come:
-- **System property** (`-Dchiave=valore`)
-- **Variabile d'ambiente** (`export CHIAVE=valore` prima del lancio)
+Variables can be passed interchangeably as:
+- **System property** (`-Dkey=value`)
+- **Environment variable** (`export KEY=value` before launching)
 
-### Avvio con moduli aggiuntivi in extlib
+### Start with additional modules in extlib
 
 ```bash
 export EXTRA_CLASSPATH_DIR=/opt/water/modules
@@ -142,9 +142,9 @@ export EXTRA_SCAN_PACKAGES=it.water.mymodule,it.water.anothermodule
 java -jar Distribution-spring-app-3.0.0.jar
 ```
 
-I JAR presenti in `/opt/water/modules` vengono caricati automaticamente da `WaterLauncher` prima che Spring parta.
+The JARs found in `/opt/water/modules` are automatically loaded by `WaterLauncher` before Spring starts.
 
-### Script di avvio consigliato (produzione)
+### Recommended startup script (production)
 
 ```bash
 #!/usr/bin/env bash
@@ -175,17 +175,17 @@ exec java \
 
 ---
 
-## 5. Creazione e avvio del container Docker
+## 5. Building and running the Docker container
 
-### 5.1 Build dell'immagine
+### 5.1 Building the image
 
-Prima di costruire l'immagine è necessario che il JAR sia già compilato:
+The JAR must already be compiled before building the image:
 
 ```bash
-# 1. Build del JAR
-yo water:build --projects Distribution-spring-app
+# 1. Build the JAR
+yo water:build --projects Distribution
 
-# 2. Build dell'immagine Docker (dalla directory del modulo)
+# 2. Build the Docker image (from the module directory)
 cd Distribution/Distribution-spring-app
 
 docker build \
@@ -194,18 +194,18 @@ docker build \
   .
 ```
 
-Il Dockerfile usa `eclipse-temurin:17-jre-jammy` come base e copia il JAR prodotto da Gradle:
+The Dockerfile uses `eclipse-temurin:17-jre-jammy` as the base image and copies the JAR produced by Gradle:
 
 ```
 build/libs/Distribution-spring-app-*.jar → /app/app.jar
 ```
 
-L'immagine:
-- Crea un utente non-root `water` (principio del minimo privilegio)
-- Espone la porta `8080`
-- Dichiara il volume `/extlib` per i moduli runtime
+The image:
+- Creates a non-root `water` user (least-privilege principle)
+- Exposes port `8080`
+- Declares the `/extlib` volume for runtime modules
 
-### 5.2 Avvio container — configurazione minimale
+### 5.2 Running the container — minimal configuration
 
 ```bash
 docker run -d \
@@ -214,7 +214,7 @@ docker run -d \
   water-spring-app:latest
 ```
 
-### 5.3 Avvio container — configurazione completa
+### 5.3 Running the container — full configuration
 
 ```bash
 docker run -d \
@@ -239,7 +239,7 @@ docker run -d \
   water-spring-app:latest
 ```
 
-### 5.4 Docker Compose (stack completo con PostgreSQL)
+### 5.4 Docker Compose (full stack with PostgreSQL)
 
 ```yaml
 # docker-compose.yml
@@ -285,143 +285,143 @@ services:
       WATER_KEYSTORE_ALIAS: server-cert
       WATER_PRIVATE_KEY_PASSWORD: changeme
 
-      # Moduli aggiuntivi
+      # Additional modules
       EXTRA_CLASSPATH_DIR: /extlib
       EXTRA_SCAN_PACKAGES: ""
 
     volumes:
-      - ./modules:/extlib          # JAR dei moduli Water aggiuntivi
-      - ./certs:/certs:ro          # Certificati e keystore
+      - ./modules:/extlib          # additional Water module JARs
+      - ./certs:/certs:ro          # certificates and keystore
 
 volumes:
   pg_data:
 ```
 
 ```bash
-# Avvio stack
+# Start the stack
 docker compose up -d
 
-# Log in tempo reale
+# Live logs
 docker compose logs -f water-app
 
 # Stop
 docker compose down
 ```
 
-> **Nota**: il driver PostgreSQL (`org.postgresql:postgresql`) deve essere presente nel JAR principale o aggiunto come dipendenza nel `build.gradle` prima della build. Non può essere caricato tramite `/extlib` perché il datasource Spring viene inizializzato prima del classloader esteso.
+> **Note**: the PostgreSQL driver (`org.postgresql:postgresql`) must be present in the main JAR or added as a dependency in `build.gradle` before the build. It cannot be loaded through `/extlib` because the Spring datasource is initialized before the extended classloader.
 
 ---
 
-## 6. Riferimento variabili d'ambiente
+## 6. Environment variables reference
 
-Tutte le variabili hanno un valore di default applicato sia in `application.properties` (via `${VAR:default}`) sia nel `Dockerfile`.
+All variables have a default value applied both in `application.properties` (via `${VAR:default}`) and in the `Dockerfile`.
 
 ### Server
 
-| Variabile | Default | Descrizione |
+| Variable | Default | Description |
 |---|---|---|
-| `SERVER_PORT` | `8080` | Porta HTTP su cui ascolta Spring Boot |
-| `SERVER_SERVLET_CONTEXT_PATH` | `/water` | Context path dell'applicazione. Tutti gli endpoint REST sono relativo a questo path |
+| `SERVER_PORT` | `8080` | HTTP port Spring Boot listens on |
+| `SERVER_SERVLET_CONTEXT_PATH` | `/water` | Application context path. All REST endpoints are relative to this path |
 
-### Classpath e scansione
+### Classpath and scanning
 
-| Variabile | Default | Descrizione |
+| Variable | Default | Description |
 |---|---|---|
-| `EXTRA_CLASSPATH_DIR` | `/extlib` | Directory da cui `WaterLauncher` carica i JAR aggiuntivi prima dell'avvio di Spring |
-| `EXTRA_SCAN_PACKAGES` | *(vuoto)* | Pacchetti aggiuntivi da passare a `@ComponentScan`. Separati da virgola. Necessari solo per moduli fuori da `it.water.*` |
+| `EXTRA_CLASSPATH_DIR` | `/extlib` | Directory from which `WaterLauncher` loads the additional JARs before Spring starts |
+| `EXTRA_SCAN_PACKAGES` | *(empty)* | Additional packages passed to `@ComponentScan`. Comma-separated. Needed only for modules outside `it.water.*` |
 
-### Provisioning dinamico moduli (vedi sez. 8)
+### Dynamic module provisioning (see section 8)
 
-| Variabile | Default | Descrizione |
+| Variable | Default | Description |
 |---|---|---|
-| `WATER_MODULES` | *(vuoto)* | Lista coordinate Maven `groupId:artifactId:version` separate da virgola, scaricate in `/extlib` all'avvio |
-| `WATER_MAVEN_REPO_<n>_URL` | *(vuoto)* | Base URL del repository n-esimo (`n`=1,2,3,...), provati in ordine con failover |
-| `WATER_MAVEN_REPO_<n>_USER` | *(vuoto)* | Username opzionale per il repo n-esimo |
-| `WATER_MAVEN_REPO_<n>_PASSWORD` | *(vuoto)* | Password/token opzionale per il repo n-esimo |
+| `WATER_MODULES` | *(empty)* | Comma-separated list of Maven coordinates `groupId:artifactId:version`, downloaded into `/extlib` at startup |
+| `WATER_MAVEN_REPO_<n>_URL` | *(empty)* | Base URL of the n-th repository (`n`=1,2,3,...), tried in order with failover |
+| `WATER_MAVEN_REPO_<n>_USER` | *(empty)* | Optional username for the n-th repo |
+| `WATER_MAVEN_REPO_<n>_PASSWORD` | *(empty)* | Optional password/token for the n-th repo |
 
-### Modalità test
+### Test mode
 
-| Variabile | Default | Descrizione |
+| Variable | Default | Description |
 |---|---|---|
-| `WATER_TEST_MODE` | `false` | Se `true`, disabilita la validazione JWT e alcune protezioni di sicurezza. **Mai `true` in produzione.** |
+| `WATER_TEST_MODE` | `false` | If `true`, disables JWT validation and some security protections. **Never `true` in production.** |
 
-### Keystore e certificati
+### Keystore and certificates
 
-| Variabile | Default | Descrizione |
+| Variable | Default | Description |
 |---|---|---|
-| `WATER_KEYSTORE_TYPE` | `jks` | Tipo di keystore: `jks` o `pkcs12` |
-| `WATER_KEYSTORE_FILE` | `/app/default-certs/server.keystore` (fallback container) | **Path di file semplice** del keystore (es. `/certs/server.keystore`) oppure `classpath:...`. **Non** usare il prefisso `file:`. Se la variabile è assente, l'entrypoint usa il keystore demo generato nell'immagine (vedi nota sotto) |
-| `WATER_KEYSTORE_PASSWORD` | `water.` | Password del keystore |
-| `WATER_KEYSTORE_ALIAS` | `server-cert` | Alias del certificato server nel keystore |
-| `WATER_PRIVATE_KEY_PASSWORD` | `water.` | Password della chiave privata |
+| `WATER_KEYSTORE_TYPE` | `jks` | Keystore type: `jks` or `pkcs12` |
+| `WATER_KEYSTORE_FILE` | `/app/default-certs/server.keystore` (container fallback) | **Plain file path** of the keystore (e.g. `/certs/server.keystore`) or `classpath:...`. Do **not** use the `file:` prefix. If the variable is absent, the entrypoint uses the demo keystore generated in the image (see note below) |
+| `WATER_KEYSTORE_PASSWORD` | `water.` | Keystore password |
+| `WATER_KEYSTORE_ALIAS` | `server-cert` | Server certificate alias in the keystore |
+| `WATER_PRIVATE_KEY_PASSWORD` | `water.` | Private key password |
 
 ### Database
 
-| Variabile | Default | Descrizione |
+| Variable | Default | Description |
 |---|---|---|
-| `DB_DRIVER_CLASS_NAME` | `org.hsqldb.jdbcDriver` | Classe JDBC driver. Cambiare per PostgreSQL, MySQL, ecc. |
-| `DB_HOST` | `jdbc:hsqldb:mem:waterdb` | URL di connessione JDBC |
-| `DB_USERNAME` | `sa` | Username database |
-| `DB_PASSWORD` | *(vuoto)* | Password database |
-| `DB_POOL_SIZE` | `10` | Dimensione massima del pool HikariCP |
+| `DB_DRIVER_CLASS_NAME` | `org.hsqldb.jdbcDriver` | JDBC driver class. Change it for PostgreSQL, MySQL, etc. |
+| `DB_HOST` | `jdbc:hsqldb:mem:waterdb` | JDBC connection URL |
+| `DB_USERNAME` | `sa` | Database username |
+| `DB_PASSWORD` | *(empty)* | Database password |
+| `DB_POOL_SIZE` | `10` | Maximum HikariCP pool size |
 
 ---
 
-## 7. Sistema di estensione runtime (extlib)
+## 7. Runtime extension system (extlib)
 
-`WaterLauncher` implementa un meccanismo di **plugin JAR** che consente di aggiungere moduli Water all'applicazione senza ricompilare il JAR principale.
+`WaterLauncher` implements a **JAR plugin** mechanism that allows adding Water modules to the application without recompiling the main JAR.
 
-### Come funziona
+### How it works
 
 ```
-Avvio JVM
+JVM start
    │
    ▼
-WaterLauncher legge EXTRA_CLASSPATH_DIR (default: /extlib)
+WaterLauncher reads EXTRA_CLASSPATH_DIR (default: /extlib)
    │
-   ├─ Costruisce URLClassLoader con tutti i .jar trovati
-   │   └─ Lo imposta come ContextClassLoader del thread principale
+   ├─ Builds a URLClassLoader with all the .jar files found
+   │   └─ Sets it as the ContextClassLoader of the main thread
    │
-   ├─ Per ogni JAR: cerca it.water.application.properties
-   │   └─ Carica le properties e le registra come WaterPropertiesPropertySource
+   ├─ For each JAR: looks for it.water.application.properties
+   │   └─ Loads the properties and registers them as a WaterPropertiesPropertySource
    │
-   └─ Avvia SpringApplication con il ResourceLoader aggiornato
-         └─ Spring vede tutte le classi nei JAR esterni
+   └─ Starts SpringApplication with the updated ResourceLoader
+         └─ Spring sees all classes in the external JARs
 ```
 
-### Struttura di un modulo esterno compatibile
+### Structure of a compatible external module
 
-Un JAR da inserire in `/extlib` deve:
+A JAR to drop into `/extlib` must:
 
-1. Contenere classi annotate con `@FrameworkComponent` (o `@Component` Spring)
-2. Opzionalmente: includere `it.water.application.properties` nella root del JAR
+1. Contain classes annotated with `@FrameworkComponent` (or Spring's `@Component`)
+2. Optionally: include `it.water.application.properties` at the JAR root
 
 ```
 mymodule.jar
 ├─ it/water/mymodule/
 │   ├─ MyService.class          (@FrameworkComponent)
 │   └─ MyEntity.class           (@Entity)
-└─ it.water.application.properties   ← properties specifiche del modulo
+└─ it.water.application.properties   ← module-specific properties
 ```
 
-### Esempio di it.water.application.properties
+### Example of it.water.application.properties
 
 ```properties
-# it.water.application.properties (nella root del JAR esterno)
+# it.water.application.properties (at the external JAR root)
 mymodule.feature.enabled=true
 mymodule.timeout=5000
 ```
 
-### Moduli precaricati (extraLib)
+### Preloaded modules (extraLib)
 
-Il repository include già due moduli pronti all'uso in `extraLib/`:
+The repository already includes ready-to-use modules under `extraLib/`:
 
-| JAR | Funzione |
+| JAR | Function |
 |---|---|
-| `Authentication-service-spring-3.0.0.jar` | Servizio di autenticazione JWT |
-| `User-service-spring-3.0.0.jar` | Gestione utenti, ruoli e permessi |
+| `Authentication-service-spring-3.0.0.jar` | JWT authentication service |
+| `User-service-spring-3.0.0.jar` | User, role and permission management |
 
-Per attivarli in un container:
+To enable them in a container:
 
 ```bash
 docker run -d \
@@ -431,55 +431,55 @@ docker run -d \
 
 ---
 
-## 8. Provisioning dinamico dei moduli da repository Maven
+## 8. Dynamic module provisioning from Maven repositories
 
-Oltre al deposito statico di JAR in `/extlib` (volume montato o `extraLib/` baked nell'immagine), il container può **scaricare a runtime** i moduli Water direttamente da uno o più repository Maven, senza ricostruire l'immagine né montare volumi.
+In addition to statically placing JARs in `/extlib` (mounted volume or `extraLib/` baked into the image), the container can **download Water modules at runtime** directly from one or more Maven repositories, without rebuilding the image or mounting volumes.
 
-### Come funziona
+### How it works
 
 ```
 container start
    └─ entrypoint.sh
-        ├─ 1. legge WATER_MODULES (lista coordinate Maven)
-        ├─ 2. legge i repository WATER_MAVEN_REPO_<n>_URL/USER/PASSWORD
-        ├─ 3. per ogni modulo → scarica il jar in /extlib (failover sui repo)
-        ├─ 4. fail-fast se un modulo non è risolvibile in NESSUN repo
-        └─ 5. exec java -jar app.jar   ← le env del container sono ereditate
-                  └─ WaterLauncher carica /extlib come già documentato (sez. 7)
+        ├─ 1. reads WATER_MODULES (list of Maven coordinates)
+        ├─ 2. reads the WATER_MAVEN_REPO_<n>_URL/USER/PASSWORD repositories
+        ├─ 3. for each module → downloads the jar into /extlib (repo failover)
+        ├─ 4. fail-fast if a module cannot be resolved in ANY repo
+        └─ 5. exec java -jar app.jar   ← the container env is inherited
+                  └─ WaterLauncher loads /extlib as already documented (section 7)
 ```
 
-Le variabili d'ambiente del container vengono **ereditate automaticamente** dal processo `java` (l'entrypoint usa `exec`): non serve alcun forward manuale, l'app Spring le risolve tramite i placeholder `${VAR:default}` in `application.properties`.
+The container environment variables are **automatically inherited** by the `java` process (the entrypoint uses `exec`): no manual forwarding is needed, the Spring app resolves them through the `${VAR:default}` placeholders in `application.properties`.
 
-### Variabili di configurazione
+### Configuration variables
 
-| Variabile | Descrizione |
+| Variable | Description |
 |---|---|
-| `WATER_MODULES` | Lista di coordinate Maven `groupId:artifactId:version` separate da virgola. Se vuota, nessun download (retrocompatibilità con volume/`extraLib`). |
-| `WATER_MAVEN_REPO_<n>_URL` | Base URL del repository n-esimo (`n` = 1, 2, 3, ...). Iterati in ordine finché valorizzati. |
-| `WATER_MAVEN_REPO_<n>_USER` | *(opzionale)* Username per il repo n-esimo. |
-| `WATER_MAVEN_REPO_<n>_PASSWORD` | *(opzionale)* Password/token per il repo n-esimo. |
+| `WATER_MODULES` | Comma-separated list of Maven coordinates `groupId:artifactId:version`. If empty, no download (backward compatible with volume/`extraLib`). |
+| `WATER_MAVEN_REPO_<n>_URL` | Base URL of the n-th repository (`n` = 1, 2, 3, ...). Iterated in order while set. |
+| `WATER_MAVEN_REPO_<n>_USER` | *(optional)* Username for the n-th repo. |
+| `WATER_MAVEN_REPO_<n>_PASSWORD` | *(optional)* Password/token for the n-th repo. |
 
-### Comportamento
+### Behavior
 
-- **Download flat**: viene scaricato **solo** il JAR del modulo (nessuna risoluzione di dipendenze transitive). Le dipendenze non-Water (es. driver JDBC) devono essere già nel JAR principale — vedi nota sez. 5.4.
-- **Failover**: per ogni modulo i repository vengono provati nell'ordine `1, 2, 3, ...`; vince il **primo** che risponde HTTP 200. Il log indica da quale repo è stato preso ogni modulo.
-- **Auth per-repo**: se per un repo sono valorizzati `_USER`/`_PASSWORD`, `curl` usa l'autenticazione basic verso quel repo.
-- **Fail-fast** (coerente con la politica del keystore):
-  - modulo non trovato in nessun repo → `exit 1` prima di avviare Spring;
-  - `WATER_MODULES` valorizzata ma nessun repo configurato → `exit 1`;
-  - coordinata malformata (≠ `groupId:artifactId:version`) → `exit 1`;
-  - versione `*-SNAPSHOT` → `exit 1` (non supportata: richiederebbe la risoluzione di `maven-metadata.xml`).
+- **Flat download**: only the module JAR is downloaded (no transitive dependency resolution). Non-Water dependencies (e.g. JDBC drivers) must already be in the main JAR — see the note in section 5.4.
+- **Failover**: for each module the repositories are tried in order `1, 2, 3, ...`; the **first** that returns HTTP 200 wins. The log shows which repo each module was taken from.
+- **Per-repo auth**: if `_USER`/`_PASSWORD` are set for a repo, `curl` uses basic authentication against that repo.
+- **Fail-fast** (consistent with the keystore policy):
+  - module not found in any repo → `exit 1` before starting Spring;
+  - `WATER_MODULES` set but no repository configured → `exit 1`;
+  - malformed coordinate (≠ `groupId:artifactId:version`) → `exit 1`;
+  - `*-SNAPSHOT` version → `exit 1` (not supported: it would require resolving `maven-metadata.xml`).
 
-> **URL costruito**: `<repoBaseUrl>/<groupId con / al posto dei .>/<artifactId>/<version>/<artifactId>-<version>.jar`
+> **Built URL**: `<repoBaseUrl>/<groupId with / instead of .>/<artifactId>/<version>/<artifactId>-<version>.jar`
 
-### Esempio `docker run`
+### `docker run` example
 
 ```bash
 docker run -d \
   --name water-app \
   -p 8080:8080 \
   -e WATER_MODULES="it.water.user:User-service-spring:3.0.0,it.water.authentication:Authentication-service-spring:3.0.0" \
-  -e WATER_MAVEN_REPO_1_URL="https://nexus.azienda.it/repository/maven-releases" \
+  -e WATER_MAVEN_REPO_1_URL="https://nexus.company.com/repository/maven-releases" \
   -e WATER_MAVEN_REPO_1_USER="ci-reader" \
   -e WATER_MAVEN_REPO_1_PASSWORD="s3cr3t" \
   -e WATER_MAVEN_REPO_2_URL="https://repo1.maven.org/maven2" \
@@ -491,7 +491,7 @@ docker run -d \
   water-spring-app:latest
 ```
 
-### Esempio Docker Compose
+### Docker Compose example
 
 ```yaml
 services:
@@ -500,16 +500,16 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Moduli scaricati a runtime
+      # Modules downloaded at runtime
       WATER_MODULES: "it.water.user:User-service-spring:3.0.0,it.water.authentication:Authentication-service-spring:3.0.0"
 
-      # Repository in ordine di failover
-      WATER_MAVEN_REPO_1_URL: "https://nexus.azienda.it/repository/maven-releases"
+      # Repositories in failover order
+      WATER_MAVEN_REPO_1_URL: "https://nexus.company.com/repository/maven-releases"
       WATER_MAVEN_REPO_1_USER: "ci-reader"
       WATER_MAVEN_REPO_1_PASSWORD: "s3cr3t"
       WATER_MAVEN_REPO_2_URL: "https://repo1.maven.org/maven2"
 
-      # Keystore (fail-fast, vedi sez. 10)
+      # Keystore (fail-fast, see section 10)
       WATER_KEYSTORE_TYPE: jks
       WATER_KEYSTORE_FILE: /certs/server.keystore
       WATER_KEYSTORE_PASSWORD: changeme
@@ -518,15 +518,15 @@ services:
       - ./certs:/certs:ro
 ```
 
-> **Combinabile con `/extlib`**: i JAR scaricati da `WATER_MODULES` si **aggiungono** a quelli già presenti in `/extlib` (volume o `extraLib`), non li sostituiscono.
+> **Combinable with `/extlib`**: the JARs downloaded from `WATER_MODULES` are **added** to those already present in `/extlib` (volume or `extraLib`), they do not replace them.
 
 ---
 
-## 9. Configurazione database
+## 9. Database configuration
 
-### Default: HSQLDB in-memory (sviluppo / test)
+### Default: in-memory HSQLDB (development / test)
 
-Configurazione attiva per default, non richiede setup esterno. I dati vengono persi al riavvio (`create-drop`).
+Active by default, requires no external setup. Data is lost on restart (`create-drop`).
 
 ```properties
 spring.datasource.driver-class-name=org.hsqldb.jdbcDriver
@@ -535,15 +535,15 @@ spring.datasource.username=sa
 spring.datasource.password=
 ```
 
-### PostgreSQL (produzione consigliata)
+### PostgreSQL (recommended for production)
 
-Aggiungere la dipendenza nel `build.gradle` prima della build:
+Add the dependency in `build.gradle` before the build:
 
 ```groovy
 implementation 'org.postgresql:postgresql:42.7.3'
 ```
 
-Poi configurare via variabili d'ambiente:
+Then configure via environment variables:
 
 ```bash
 DB_DRIVER_CLASS_NAME=org.postgresql.Driver
@@ -566,48 +566,48 @@ DB_USERNAME=water_user
 DB_PASSWORD=secret
 ```
 
-### Strategia DDL
+### DDL strategy
 
-La proprietà `spring.jpa.hibernate.ddl-auto=create-drop` è fissa nel `application.properties` e adatta a sviluppo. Per la produzione si raccomanda di sovrascriverla aggiungendo alla JVM:
+The property `spring.jpa.hibernate.ddl-auto=create-drop` is fixed in `application.properties` and suited to development. For production it is recommended to override it by adding to the JVM:
 
 ```bash
 -Dspring.jpa.hibernate.ddl-auto=validate
 ```
 
-oppure gestendo le migrazioni con Flyway o Liquibase.
+or by managing migrations with Flyway or Liquibase.
 
 ---
 
-## 10. Configurazione certificati e keystore
+## 10. Certificate and keystore configuration
 
-### Keystore demo del container (solo sviluppo/test)
+### Container demo keystore (development/test only)
 
-Il **JAR non contiene alcun certificato** (fix di sicurezza #1: nessuna chiave nota nell'artefatto,
-`WATER_KEYSTORE_FILE` mancante → fail-fast). Il certificato demo è invece una **proprietà del container**:
-l'immagine ne genera uno con `keytool` a build time in `/app/default-certs/server.keystore`
+The **JAR contains no certificate** (security fix #1: no well-known keys in the artifact,
+a missing `WATER_KEYSTORE_FILE` → fail-fast). The demo certificate is instead a **container property**:
+the image generates one with `keytool` at build time in `/app/default-certs/server.keystore`
 (alias `server-cert`, password `water.`).
 
-Comportamento dell'entrypoint:
-- se `WATER_KEYSTORE_FILE` **è impostata** → si usa quel keystore (path semplice, es. `/certs/server.keystore`);
-- se `WATER_KEYSTORE_FILE` **è assente** → fallback automatico al keystore demo `/app/default-certs/server.keystore`,
-  con un warning nei log.
+Entrypoint behavior:
+- if `WATER_KEYSTORE_FILE` **is set** → that keystore is used (plain path, e.g. `/certs/server.keystore`);
+- if `WATER_KEYSTORE_FILE` **is absent** → automatic fallback to the demo keystore `/app/default-certs/server.keystore`,
+  with a warning in the logs.
 
-Questo permette di far partire il container direttamente per le prove:
+This lets the container start directly for testing:
 
 ```bash
-docker run -p 8080:8080 water-spring-app:3.0.0   # parte col keystore demo, senza montare nulla
+docker run -p 8080:8080 water-spring-app:3.0.0   # starts with the demo keystore, nothing to mount
 ```
 
-> **Attenzione**: il keystore demo ha password `water.` ed è valido solo per sviluppo/test.
-> In produzione fornire SEMPRE un keystore esterno via `WATER_KEYSTORE_FILE` (vedi sotto).
-> Il jar eseguito fuori dal container resta fail-fast: senza `WATER_KEYSTORE_FILE` non parte.
+> **Warning**: the demo keystore has password `water.` and is valid for development/test only.
+> In production ALWAYS provide an external keystore via `WATER_KEYSTORE_FILE` (see below).
+> The jar executed outside the container stays fail-fast: without `WATER_KEYSTORE_FILE` it does not start.
 
-### Keystore esterno (produzione)
+### External keystore (production)
 
-Montare il keystore come volume e puntarvi tramite variabile d'ambiente:
+Mount the keystore as a volume and point to it via an environment variable:
 
 ```bash
-# Keystore JKS esterno
+# External JKS keystore
 docker run -d \
   -v /host/certs:/certs:ro \
   -e WATER_KEYSTORE_TYPE=jks \
@@ -619,7 +619,7 @@ docker run -d \
 ```
 
 ```bash
-# Keystore PKCS12
+# PKCS12 keystore
 docker run -d \
   -v /host/certs:/certs:ro \
   -e WATER_KEYSTORE_TYPE=pkcs12 \
@@ -630,7 +630,7 @@ docker run -d \
   water-spring-app:latest
 ```
 
-### Generare un keystore JKS per produzione
+### Generating a JKS keystore for production
 
 ```bash
 keytool -genkeypair \
@@ -648,21 +648,21 @@ keytool -genkeypair \
 
 ## 11. Health check
 
-Il Dockerfile configura un health check TCP automatico:
+The Dockerfile configures an automatic TCP health check:
 
 ```dockerfile
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD bash -c 'exec 6<>/dev/tcp/localhost/${SERVER_PORT} && ...'
 ```
 
-| Parametro | Valore | Significato |
+| Parameter | Value | Meaning |
 |---|---|---|
-| `--interval` | 30s | Frequenza dei check |
-| `--timeout` | 5s | Timeout per singolo check |
-| `--start-period` | 60s | Tempo di grazia all'avvio (Spring Boot impiega ~30s) |
-| `--retries` | 3 | Tentativi falliti prima di dichiarare il container `unhealthy` |
+| `--interval` | 30s | Check frequency |
+| `--timeout` | 5s | Timeout for a single check |
+| `--start-period` | 60s | Grace period at startup (Spring Boot takes ~30s) |
+| `--retries` | 3 | Failed attempts before declaring the container `unhealthy` |
 
-Verifica stato health in Docker:
+Check the health status in Docker:
 
 ```bash
 docker inspect --format='{{.State.Health.Status}}' water-app
@@ -671,20 +671,20 @@ docker inspect --format='{{.State.Health.Status}}' water-app
 
 ---
 
-## 12. Best practice per la produzione
+## 12. Production best practices
 
-### Sicurezza
+### Security
 
-- Impostare `WATER_TEST_MODE=false` (è il default, verificare che non venga sovrascritto)
-- Usare keystore esterni con certificati firmati da CA reale
-- Cambiare tutte le password di default (`water.`, `sa`, ecc.)
-- Il container gira già come utente non-root `water` — non eseguire mai come `root`
+- Set `WATER_TEST_MODE=false` (it is the default, verify it is not overridden)
+- Use external keystores with certificates signed by a real CA
+- Change all default passwords (`water.`, `sa`, etc.)
+- The container already runs as the non-root `water` user — never run as `root`
 
 ### Database
 
-- Usare PostgreSQL o MySQL al posto di HSQLDB in-memory
-- Configurare `spring.jpa.hibernate.ddl-auto=validate` o affidarsi a Flyway/Liquibase
-- Dimensionare `DB_POOL_SIZE` in base al carico previsto (default 10)
+- Use PostgreSQL or MySQL instead of in-memory HSQLDB
+- Configure `spring.jpa.hibernate.ddl-auto=validate` or rely on Flyway/Liquibase
+- Size `DB_POOL_SIZE` according to the expected load (default 10)
 
 ### JVM
 
@@ -699,7 +699,7 @@ java \
 
 ### Logging
 
-Spring Boot scrive su stdout per default. In ambiente container, reindirizzare i log verso un aggregatore (ELK, Loki, CloudWatch) via driver Docker:
+Spring Boot writes to stdout by default. In a container environment, forward the logs to an aggregator (ELK, Loki, CloudWatch) via the Docker driver:
 
 ```bash
 docker run -d \
@@ -711,13 +711,13 @@ docker run -d \
 
 ### Secrets management
 
-Non passare password come variabili d'ambiente in chiaro nei file `docker-compose.yml` versionati. Usare:
+Do not pass passwords as plaintext environment variables in versioned `docker-compose.yml` files. Use:
 - **Docker Secrets** (`docker secret create`)
-- **Kubernetes Secrets** (base64-encoded, con encryption at rest)
-- **Vault** o sistemi di secrets management dedicati
+- **Kubernetes Secrets** (base64-encoded, with encryption at rest)
+- **Vault** or dedicated secrets management systems
 
 ```yaml
-# docker-compose con secrets
+# docker-compose with secrets
 services:
   water-app:
     image: water-spring-app:latest
