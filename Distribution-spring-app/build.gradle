@@ -16,28 +16,32 @@ dependencies {
     //Validation
     implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: project.jakartaValidationVersion
     implementation group: "org.passay", name: "passay", version: project.passayVersion
-    //Core Water modules bundled DIRECTLY (same set as Distribution-spring's springJar).
-    //We do NOT depend on the published Water-distribution-spring coordinate because it is
-    //produced by a sibling project in THIS SAME build: depending on its publication would
-    //create a build-order short-circuit (the app could compile against a stale/absent m2
-    //artifact). Core/Implementation are upstream builds (already in m2), so this is safe.
-    implementation group: 'it.water.core', name: 'Core-api', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-bundle', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-interceptors', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-model', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-permission', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-registry', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-security', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-service', version: project.waterVersion
-    implementation group: 'it.water.core', name: 'Core-validation', version: project.waterVersion
-    implementation group: 'it.water.implementation', name: 'Implementation-spring', version: project.waterVersion
-    implementation group: 'org.reflections', name: 'reflections', version: '0.10.2'
+    //Core + Implementation-spring bundle from the SINGLE in-build source: Distribution-spring.
+    //We consume its shadow springJar via a project() dependency on the dedicated consumable
+    //configuration (springDistributionElements) instead of the published Water-distribution-spring
+    //coordinate — this avoids the same-build build-order short-circuit while keeping one source of
+    //truth. Plain `implementation` (NOT the plugin's implementationInclude) is intentional: this
+    //module's fat jar is the shadowJar below, which already embeds runtimeClasspath and merges the
+    //Atteo META-INF/annotations index. implementationInclude would instead try to fold into the
+    //(disabled) standard jar and run the plugin's annotation-merge against a non-existent
+    //build/classes/.../META-INF/annotations dir (spring-app has no @FrameworkComponent of its own).
+    //The bundle is self-contained (Core, Implementation-spring, reflections) and non-transitive.
+    implementation project(path: ':Distribution-spring', configuration: 'springDistributionElements')
     // JPA Repository
-    implementation 'it.water.repository.jpa:JpaRepository-spring:'+project.waterVersion
+    // Exclude the transitive PUBLISHED Water-distribution-spring: Core+Implementation must come
+    // ONLY from the in-build project ':Distribution-spring' bundle above (single source of truth).
+    // The published coordinate is an older flat shadow jar (no POM deps) that also carries
+    // Core-testing-utils — excluding it removes both the duplicate Atteo index entries and the
+    // test-utils leak into the deployable.
+    implementation('it.water.repository.jpa:JpaRepository-spring:'+project.waterVersion) {
+        exclude group: 'it.water.distribution', module: 'Water-distribution-spring'
+    }
     //hibernate validator
     implementation group: "org.hibernate", name: "hibernate-validator", version: project.hibernateValidatorVersion
     //Rest Modules
-    implementation group: 'it.water.service.rest', name: 'Rest-spring-api', version: project.waterVersion
+    implementation(group: 'it.water.service.rest', name: 'Rest-spring-api', version: project.waterVersion) {
+        exclude group: 'it.water.distribution', module: 'Water-distribution-spring'
+    }
     //Spring Boot
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-aop', version: project.springBootVersion
     implementation group: 'org.springframework.data', name: 'spring-data-jpa', version: project.springBootVersion
