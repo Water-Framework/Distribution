@@ -15,10 +15,15 @@ log() { echo "[bootstrap] $*"; }
 err() { echo "[bootstrap][ERROR] $*" >&2; }
 
 EXTRA_CLASSPATH_DIR="${EXTRA_CLASSPATH_DIR:-/extlib}"
+BASE_CLASSPATH_DIR="${BASE_CLASSPATH_DIR:-/baselib}"
 WATER_MODULES="${WATER_MODULES:-}"
+WATER_BASE_MODULES="${WATER_BASE_MODULES:-}"
 APP_JAR="${APP_JAR:-/app/app.jar}"
+# Entry point of the (flat, Shadow) uber-jar. Launched via -cp (not -jar) so the base
+# classpath dir can be appended to the SYSTEM classloader alongside the app jar.
+APP_MAIN_CLASS="${APP_MAIN_CLASS:-it.water.distribution.spring.app.WaterLauncher}"
 
-mkdir -p "$EXTRA_CLASSPATH_DIR"
+mkdir -p "$EXTRA_CLASSPATH_DIR" "$BASE_CLASSPATH_DIR"
 
 # ---------------------------------------------------------------------------
 # Avvio dell'applicazione (env già ereditate -> forward automatico)
@@ -42,15 +47,19 @@ apply_default_keystore() {
 
 start_app() {
     apply_default_keystore
-    log "Avvio WaterLauncher: java ${JAVA_OPTS:-} -jar ${APP_JAR}"
+    # Base classpath = app jar + every jar in BASE_CLASSPATH_DIR (wildcard expanded by the JVM,
+    # NOT the shell — keep it quoted). These share the application classloader with Spring, so
+    # JDBC drivers etc. dropped in BASE_CLASSPATH_DIR are visible at bean-creation time.
+    local cp="${APP_JAR}:${BASE_CLASSPATH_DIR}/*"
+    log "Avvio WaterLauncher: java ${JAVA_OPTS:-} -cp ${cp} ${APP_MAIN_CLASS}"
     # shellcheck disable=SC2086
-    exec java ${JAVA_OPTS:-} -jar "$APP_JAR" "$@"
+    exec java ${JAVA_OPTS:-} -cp "$cp" "$APP_MAIN_CLASS" "$@"
 }
 
-# Nessun modulo da provisionare: si avvia direttamente.
-# (extraLib baked / volume montato su /extlib continuano a funzionare)
-if [ -z "${WATER_MODULES// /}" ]; then
-    log "WATER_MODULES non impostata: nessun download. Uso eventuali jar già presenti in ${EXTRA_CLASSPATH_DIR}."
+# Nessun modulo da provisionare (né Water né base): si avvia direttamente.
+# (extraLib baked / volumi montati su /extlib o /baselib continuano a funzionare)
+if [ -z "${WATER_MODULES// /}" ] && [ -z "${WATER_BASE_MODULES// /}" ]; then
+    log "WATER_MODULES e WATER_BASE_MODULES non impostate: nessun download. Uso eventuali jar già presenti in ${EXTRA_CLASSPATH_DIR} e ${BASE_CLASSPATH_DIR}."
     start_app "$@"
 fi
 
@@ -87,10 +96,50 @@ if [ "${#REPO_URLS[@]}" -eq 0 ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Download di un singolo modulo con failover sui repository (primo 200 vince)
+# Scarica un singolo file (rel_path) provando i repository in ordine (primo 200 vince).
+#   fetch_from_repos <rel_path> <dest> <require_jar:true|false>
+# Se require_jar=true, valida i magic bytes ZIP ("PK") e scarta i non-jar (es. HTML da
+# un URL repository errato). Imposta la globale FETCH_REPO con il numero del repo vincente.
+# Ritorna 0 al primo successo, 1 se nessun repo risolve.
+# ---------------------------------------------------------------------------
+fetch_from_repos() {
+    local rel_path="$1"
+    local dest="$2"
+    local require_jar="${3:-false}"
+    local i base user pass full_url
+    for i in "${!REPO_URLS[@]}"; do
+        base="${REPO_URLS[$i]}"
+        user="${REPO_USERS[$i]}"
+        pass="${REPO_PASSWORDS[$i]}"
+        full_url="${base}/${rel_path}"
+        if [ -n "$user" ]; then
+            curl -fsSL -u "${user}:${pass}" -o "$dest" "$full_url" 2>/dev/null || continue
+        else
+            curl -fsSL -o "$dest" "$full_url" 2>/dev/null || continue
+        fi
+        # HTTP 200 non basta: un URL errato (es. la UI web di Nexus invece del repository
+        # Maven) può restituire 200 con una pagina HTML, che verrebbe salvata come .jar e poi
+        # rifiutata dalla JVM con un oscuro errore di classloading. Validiamo i magic bytes.
+        if [ "$require_jar" = "true" ] && [ "$(head -c 2 "$dest" 2>/dev/null)" != "PK" ]; then
+            err "  ✗ repo #$((i + 1)): '${rel_path}' scaricato ma NON è un jar valido (magic bytes ZIP assenti)."
+            err "    Probabile URL repository errato (es. UI web invece del repository Maven). Scarto e continuo."
+            rm -f "$dest"
+            continue
+        fi
+        FETCH_REPO=$((i + 1))
+        return 0
+    done
+    return 1
+}
+
+# ---------------------------------------------------------------------------
+# Scarica un singolo modulo (jar) con failover sui repository. download_module <coord> <dest_dir>
+# Download "flat": niente risoluzione transitiva. Ogni jar va elencato esplicitamente in
+# WATER_MODULES/WATER_BASE_MODULES (i jar *-service-spring sono attesi self-contained).
 # ---------------------------------------------------------------------------
 download_module() {
     local coord="$1"
+    local dest_dir="$2"
 
     # Validazione formato: groupId:artifactId:version (esattamente 3 segmenti)
     local segments
@@ -118,47 +167,53 @@ download_module() {
     esac
 
     local group_path="${group_id//.//}"
-    local jar_name="${artifact_id}-${version}.jar"
-    local rel_path="${group_path}/${artifact_id}/${version}/${jar_name}"
-    local dest="${EXTRA_CLASSPATH_DIR}/${jar_name}"
+    local rel_path="${group_path}/${artifact_id}/${version}/${artifact_id}-${version}.jar"
+    local dest="${dest_dir}/${artifact_id}-${version}.jar"
 
-    local i
-    for i in "${!REPO_URLS[@]}"; do
-        local base="${REPO_URLS[$i]}"
-        local user="${REPO_USERS[$i]}"
-        local pass="${REPO_PASSWORDS[$i]}"
-        local full_url="${base}/${rel_path}"
-
-        log "  → tentativo repo #$((i + 1)): ${full_url}"
-        if [ -n "$user" ]; then
-            if curl -fsSL -u "${user}:${pass}" -o "$dest" "$full_url"; then
-                log "  ✓ '${coord}' scaricato da repo #$((i + 1)) (${base}) -> ${dest}"
-                return 0
-            fi
-        else
-            if curl -fsSL -o "$dest" "$full_url"; then
-                log "  ✓ '${coord}' scaricato da repo #$((i + 1)) (${base}) -> ${dest}"
-                return 0
-            fi
-        fi
-    done
-
-    err "Modulo '${coord}' non risolvibile in nessun repository configurato."
-    exit 1
+    if ! fetch_from_repos "$rel_path" "$dest" true; then
+        err "Modulo '${coord}' non risolvibile (o nessun jar valido) in nessun repository configurato."
+        exit 1
+    fi
+    log "  ✓ '${coord}' scaricato da repo #${FETCH_REPO} -> ${dest}"
 }
 
 # ---------------------------------------------------------------------------
-# Iterazione sui moduli richiesti (lista separata da virgola)
+# Iterazione sui moduli richiesti (liste separate da virgola).
+# provision_modules <lista-coordinate> <cartella-destinazione>
+# Imposta la globale PROVISIONED_COUNT (non usa stdout, così resta libero per i log).
 # ---------------------------------------------------------------------------
-log "Provisioning moduli in ${EXTRA_CLASSPATH_DIR}..."
-IFS=',' read -r -a modules <<< "$WATER_MODULES"
-for raw in "${modules[@]}"; do
-    # trim spazi attorno alla coordinata
-    coord="$(echo "$raw" | xargs)"
-    [ -z "$coord" ] && continue
-    log "Modulo richiesto: ${coord}"
-    download_module "$coord"
-done
+PROVISIONED_COUNT=0
+provision_modules() {
+    local list="$1"
+    local dest_dir="$2"
+    local raw coord
+    PROVISIONED_COUNT=0
+    IFS=',' read -r -a _mods <<< "$list"
+    for raw in "${_mods[@]}"; do
+        # trim spazi attorno alla coordinata
+        coord="$(echo "$raw" | xargs)"
+        [ -z "$coord" ] && continue
+        log "Modulo richiesto: ${coord} -> ${dest_dir}"
+        download_module "$coord" "$dest_dir"
+        PROVISIONED_COUNT=$((PROVISIONED_COUNT + 1))
+    done
+}
 
-log "Provisioning completato: ${#modules[@]} modulo/i elaborati."
+# Moduli Water -> /extlib (classloader figlio isolato del WaterLauncher)
+water_count=0
+if [ -n "${WATER_MODULES// /}" ]; then
+    log "Provisioning moduli Water in ${EXTRA_CLASSPATH_DIR}..."
+    provision_modules "$WATER_MODULES" "$EXTRA_CLASSPATH_DIR"
+    water_count="$PROVISIONED_COUNT"
+fi
+
+# Moduli base (es. driver JDBC) -> /baselib (classpath di sistema, condiviso con Spring)
+base_count=0
+if [ -n "${WATER_BASE_MODULES// /}" ]; then
+    log "Provisioning moduli base in ${BASE_CLASSPATH_DIR}..."
+    provision_modules "$WATER_BASE_MODULES" "$BASE_CLASSPATH_DIR"
+    base_count="$PROVISIONED_COUNT"
+fi
+
+log "Provisioning completato: ${water_count} modulo/i Water, ${base_count} modulo/i base."
 start_app "$@"

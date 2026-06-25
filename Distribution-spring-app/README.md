@@ -327,15 +327,19 @@ All variables have a default value applied both in `application.properties` (via
 
 | Variable | Default | Description |
 |---|---|---|
-| `EXTRA_CLASSPATH_DIR` | `/extlib` | Directory from which `WaterLauncher` loads the additional JARs before Spring starts |
+| `EXTRA_CLASSPATH_DIR` | `/extlib` | Directory from which `WaterLauncher` loads Water module JARs into an **isolated child classloader** before Spring starts |
+| `BASE_CLASSPATH_DIR` | `/baselib` | Directory whose JARs are placed on the JVM **system classpath** (next to `app.jar`), sharing the application classloader with Spring. Use for libraries Spring/Hikari must see at bean-creation time — e.g. JDBC drivers |
 | `EXTRA_SCAN_PACKAGES` | *(empty)* | Additional packages passed to `@ComponentScan`. Comma-separated. Needed only for modules outside `it.water.*` |
 
 ### Dynamic module provisioning (see section 8)
 
 | Variable | Default | Description |
 |---|---|---|
-| `WATER_MODULES` | *(empty)* | Comma-separated list of Maven coordinates `groupId:artifactId:version`, downloaded into `/extlib` at startup |
-| `WATER_MAVEN_REPO_<n>_URL` | *(empty)* | Base URL of the n-th repository (`n`=1,2,3,...), tried in order with failover |
+| `WATER_MODULES` | *(empty)* | Comma-separated Maven coordinates `groupId:artifactId:version`, downloaded into `/extlib` (Water modules → isolated child classloader) at startup |
+| `WATER_BASE_MODULES` | *(empty)* | Comma-separated Maven coordinates downloaded into `/baselib` and put on the **system classpath** (shared with Spring). Use for JDBC drivers and other libraries Spring must see directly — e.g. `org.postgresql:postgresql:42.7.7` |
+| `WATER_MAVEN_REPO_1_URL` | `https://nexus.acsoftware.it/nexus/repository/maven-water/` | Primary repository (public Water Nexus). Resolves Water artifacts out-of-the-box |
+| `WATER_MAVEN_REPO_2_URL` | `file:///m2/repository` | Secondary repository: a Maven local repo, usable by mounting the host `~/.m2/repository` to `/m2/repository` (read by `curl`'s `file://` support) |
+| `WATER_MAVEN_REPO_<n>_URL` | *(empty)* | Base URL of the n-th repository (`n`=1,2,3,...), tried in order with failover (first HTTP 200 wins) |
 | `WATER_MAVEN_REPO_<n>_USER` | *(empty)* | Optional username for the n-th repo |
 | `WATER_MAVEN_REPO_<n>_PASSWORD` | *(empty)* | Optional password/token for the n-th repo |
 
@@ -440,12 +444,14 @@ In addition to statically placing JARs in `/extlib` (mounted volume or `extraLib
 ```
 container start
    └─ entrypoint.sh
-        ├─ 1. reads WATER_MODULES (list of Maven coordinates)
+        ├─ 1. reads WATER_MODULES + WATER_BASE_MODULES (lists of Maven coordinates)
         ├─ 2. reads the WATER_MAVEN_REPO_<n>_URL/USER/PASSWORD repositories
-        ├─ 3. for each module → downloads the jar into /extlib (repo failover)
+        ├─ 3. WATER_MODULES      → downloads each jar into /extlib  (repo failover)
+        │     WATER_BASE_MODULES → downloads each jar into /baselib (repo failover)
         ├─ 4. fail-fast if a module cannot be resolved in ANY repo
-        └─ 5. exec java -jar app.jar   ← the container env is inherited
-                  └─ WaterLauncher loads /extlib as already documented (section 7)
+        └─ 5. exec java -cp "app.jar:/baselib/*" WaterLauncher   ← container env inherited
+                  ├─ /baselib jars are on the SYSTEM classloader (visible to Spring/Hikari)
+                  └─ WaterLauncher loads /extlib into a child classloader (section 7)
 ```
 
 The container environment variables are **automatically inherited** by the `java` process (the entrypoint uses `exec`): no manual forwarding is needed, the Spring app resolves them through the `${VAR:default}` placeholders in `application.properties`.
@@ -454,15 +460,19 @@ The container environment variables are **automatically inherited** by the `java
 
 | Variable | Description |
 |---|---|
-| `WATER_MODULES` | Comma-separated list of Maven coordinates `groupId:artifactId:version`. If empty, no download (backward compatible with volume/`extraLib`). |
+| `WATER_MODULES` | Comma-separated list of Maven coordinates `groupId:artifactId:version` → `/extlib` (isolated child classloader). If empty, no download (backward compatible with volume/`extraLib`). |
+| `WATER_BASE_MODULES` | Comma-separated Maven coordinates → `/baselib`, put on the **system classpath** (shared with Spring). Use for JDBC drivers and other libraries Spring/Hikari must resolve at bean-creation time. |
 | `WATER_MAVEN_REPO_<n>_URL` | Base URL of the n-th repository (`n` = 1, 2, 3, ...). Iterated in order while set. |
 | `WATER_MAVEN_REPO_<n>_USER` | *(optional)* Username for the n-th repo. |
 | `WATER_MAVEN_REPO_<n>_PASSWORD` | *(optional)* Password/token for the n-th repo. |
 
 ### Behavior
 
-- **Flat download**: only the module JAR is downloaded (no transitive dependency resolution). Non-Water dependencies (e.g. JDBC drivers) must already be in the main JAR — see the note in section 5.4.
-- **Failover**: for each module the repositories are tried in order `1, 2, 3, ...`; the **first** that returns HTTP 200 wins. The log shows which repo each module was taken from.
+- **Flat download**: only the listed module JARs are downloaded (no transitive dependency resolution). Each `*-service-spring` module is expected to be **self-contained** (it bundles its own `api`/`model`/`service` via the build's `implementationInclude`); its non-Water dependencies are provided by the base `app.jar`. List every module you need explicitly in `WATER_MODULES`.
+- **Non-Water libraries Spring must see directly** (e.g. JDBC drivers) go in `WATER_BASE_MODULES` → `/baselib` (system classpath). Putting a JDBC driver in `WATER_MODULES`/`/extlib` instead causes `Cannot load driver class` because the child classloader is invisible to Hikari.
+- **Baked `javax.servlet-api`** (in `/baselib`): Water `*-service-spring` modules bundle their JAX-RS/CXF controllers, whose base class carries a `@Context javax.servlet.http.HttpServletRequest` field (Authentication #34/#37). The Spring controller `extends` that JAX-RS class, so Spring Boot 3 introspects the inherited `javax.servlet` field — which would throw `NoClassDefFoundError` (Spring Boot 3 ships only `jakarta.servlet`). The image ships `javax.servlet-api` on the base classpath so the field is loadable; it stays inert (the Spring controller reads the request via `RequestContextHolder`/jakarta).
+- **JAR validation**: a download is accepted only if it starts with the ZIP magic bytes (`PK`). A misconfigured repo URL (e.g. the Nexus **web UI** URL `.../#browse/browse:<repo>` instead of the repository URL `.../repository/<repo>/`) returns HTML `200` that would be saved as a corrupt `.jar`; this is now rejected with a clear error and the next repo is tried.
+- **Failover**: for each module the repositories are tried in order `1, 2, 3, ...`; the **first** that returns a valid jar wins. The log shows which repo each module was taken from.
 - **Per-repo auth**: if `_USER`/`_PASSWORD` are set for a repo, `curl` uses basic authentication against that repo.
 - **Fail-fast** (consistent with the keystore policy):
   - module not found in any repo → `exit 1` before starting Spring;
@@ -479,6 +489,7 @@ docker run -d \
   --name water-app \
   -p 8080:8080 \
   -e WATER_MODULES="it.water.user:User-service-spring:3.0.0,it.water.authentication:Authentication-service-spring:3.0.0" \
+  -e WATER_BASE_MODULES="org.postgresql:postgresql:42.7.7" \
   -e WATER_MAVEN_REPO_1_URL="https://nexus.company.com/repository/maven-releases" \
   -e WATER_MAVEN_REPO_1_USER="ci-reader" \
   -e WATER_MAVEN_REPO_1_PASSWORD="s3cr3t" \
@@ -500,8 +511,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Modules downloaded at runtime
+      # Water modules downloaded at runtime (→ /extlib, child classloader)
       WATER_MODULES: "it.water.user:User-service-spring:3.0.0,it.water.authentication:Authentication-service-spring:3.0.0"
+      # Base classpath jars (→ /baselib, system classloader): JDBC driver visible to Spring/Hikari
+      WATER_BASE_MODULES: "org.postgresql:postgresql:42.7.7"
 
       # Repositories in failover order
       WATER_MAVEN_REPO_1_URL: "https://nexus.company.com/repository/maven-releases"
@@ -518,7 +531,7 @@ services:
       - ./certs:/certs:ro
 ```
 
-> **Combinable with `/extlib`**: the JARs downloaded from `WATER_MODULES` are **added** to those already present in `/extlib` (volume or `extraLib`), they do not replace them.
+> **Combinable with `/extlib` and `/baselib`**: the JARs downloaded from `WATER_MODULES`/`WATER_BASE_MODULES` are **added** to those already present in `/extlib` and `/baselib` (volume or `extraLib`), they do not replace them.
 
 ---
 

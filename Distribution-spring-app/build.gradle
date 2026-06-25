@@ -16,8 +16,22 @@ dependencies {
     //Validation
     implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: project.jakartaValidationVersion
     implementation group: "org.passay", name: "passay", version: project.passayVersion
-    //Core Water Deps
-    implementation group: 'it.water.distribution', name: 'Water-distribution-spring', version: project.waterVersion
+    //Core Water modules bundled DIRECTLY (same set as Distribution-spring's springJar).
+    //We do NOT depend on the published Water-distribution-spring coordinate because it is
+    //produced by a sibling project in THIS SAME build: depending on its publication would
+    //create a build-order short-circuit (the app could compile against a stale/absent m2
+    //artifact). Core/Implementation are upstream builds (already in m2), so this is safe.
+    implementation group: 'it.water.core', name: 'Core-api', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-bundle', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-interceptors', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-model', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-permission', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-registry', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-security', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-service', version: project.waterVersion
+    implementation group: 'it.water.core', name: 'Core-validation', version: project.waterVersion
+    implementation group: 'it.water.implementation', name: 'Implementation-spring', version: project.waterVersion
+    implementation group: 'org.reflections', name: 'reflections', version: '0.10.2'
     // JPA Repository
     implementation 'it.water.repository.jpa:JpaRepository-spring:'+project.waterVersion
     //hibernate validator
